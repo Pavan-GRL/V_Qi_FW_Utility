@@ -15,7 +15,7 @@
 
 <div class="node">
   <a name="app.py"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/app.py" type="text/plain"><tt>app.py</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/app.py" type="text/plain"><tt>app.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
     <a href="#PIL">PIL</a>
@@ -168,6 +168,7 @@ imports:
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#posixpath">posixpath</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#protocol">protocol</a>
  &#8226;   <a href="#pyi_rth__tkinter.py">pyi_rth__tkinter.py</a>
  &#8226;   <a href="#pyi_rth_inspect.py">pyi_rth_inspect.py</a>
@@ -186,7 +187,6 @@ imports:
  &#8226;   <a href="#sre_constants">sre_constants</a>
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
- &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.filedialog">tkinter.filedialog</a>
@@ -3064,6 +3064,7 @@ imported by:
  &#8226;   <a href="#matplotlib.pyplot">matplotlib.pyplot</a>
  &#8226;   <a href="#net_client">net_client</a>
  &#8226;   <a href="#packaging.version">packaging.version</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#protocol">protocol</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#pyparsing.actions">pyparsing.actions</a>
@@ -6365,7 +6366,6 @@ imports:
 imported by:
     <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#logger">logger</a>
- &#8226;   <a href="#udp_fsk">udp_fsk</a>
 
   </div>
 
@@ -6650,7 +6650,6 @@ imported by:
  &#8226;   <a href="#net_client">net_client</a>
  &#8226;   <a href="#plistlib">plistlib</a>
  &#8226;   <a href="#pyparsing.common">pyparsing.common</a>
- &#8226;   <a href="#udp_fsk">udp_fsk</a>
  &#8226;   <a href="#xmlrpc.client">xmlrpc.client</a>
 
   </div>
@@ -10226,7 +10225,7 @@ imported by:
 
 <div class="node">
   <a name="esp_flasher"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/esp_flasher.py" type="text/plain"><tt>esp_flasher</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/esp_flasher.py" type="text/plain"><tt>esp_flasher</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -11965,12 +11964,13 @@ imported by:
 
 <div class="node">
   <a name="logger"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/logger.py" type="text/plain"><tt>logger</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/logger.py" type="text/plain"><tt>logger</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#csv">csv</a>
  &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#threading">threading</a>
  &#8226;   <a href="#typing">typing</a>
 
@@ -16535,7 +16535,7 @@ imported by:
 
 <div class="node">
   <a name="net_client"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/net_client.py" type="text/plain"><tt>net_client</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/net_client.py" type="text/plain"><tt>net_client</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -23851,6 +23851,7 @@ imported by:
  &#8226;   <a href="#numpy.testing._private.utils">numpy.testing._private.utils</a>
  &#8226;   <a href="#pathlib._abc">pathlib._abc</a>
  &#8226;   <a href="#pathlib._local">pathlib._local</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#pyparsing.core">pyparsing.core</a>
  &#8226;   <a href="#zipfile._path">zipfile._path</a>
 
@@ -24157,8 +24158,29 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="project_paths"></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/project_paths.py" type="text/plain"><tt>project_paths</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#pathlib">pathlib</a>
+ &#8226;   <a href="#sys">sys</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#app.py">app.py</a>
+ &#8226;   <a href="#logger">logger</a>
+ &#8226;   <a href="#udp_fsk">udp_fsk</a>
+ &#8226;   <a href="#ui_plot">ui_plot</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="protocol"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/protocol.py" type="text/plain"><tt>protocol</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/protocol.py" type="text/plain"><tt>protocol</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -25745,7 +25767,6 @@ imported by:
  &#8226;   <a href="#_pyi_rth_utils">_pyi_rth_utils</a>
  &#8226;   <a href="#_pyi_rth_utils.tempfile">_pyi_rth_utils.tempfile</a>
  &#8226;   <a href="#_pyrepl.pager">_pyrepl.pager</a>
- &#8226;   <a href="#app.py">app.py</a>
  &#8226;   <a href="#argparse">argparse</a>
  &#8226;   <a href="#ast">ast</a>
  &#8226;   <a href="#asyncio">asyncio</a>
@@ -25869,6 +25890,7 @@ imported by:
  &#8226;   <a href="#platform">platform</a>
  &#8226;   <a href="#posixpath">posixpath</a>
  &#8226;   <a href="#pprint">pprint</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#py_compile">py_compile</a>
  &#8226;   <a href="#pydoc">pydoc</a>
  &#8226;   <a href="#pyi_rth__tkinter.py">pyi_rth__tkinter.py</a>
@@ -26204,6 +26226,7 @@ imported by:
  &#8226;   <a href="#subprocess">subprocess</a>
  &#8226;   <a href="#tarfile">tarfile</a>
  &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#udp_fsk">udp_fsk</a>
  &#8226;   <a href="#ui_plot">ui_plot</a>
  &#8226;   <a href="#unittest.case">unittest.case</a>
  &#8226;   <a href="#unittest.runner">unittest.runner</a>
@@ -26793,17 +26816,17 @@ imported by:
 
 <div class="node">
   <a name="udp_fsk"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/udp_fsk.py" type="text/plain"><tt>udp_fsk</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/udp_fsk.py" type="text/plain"><tt>udp_fsk</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
- &#8226;   <a href="#csv">csv</a>
- &#8226;   <a href="#datetime">datetime</a>
  &#8226;   <a href="#os">os</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#queue">queue</a>
  &#8226;   <a href="#socket">socket</a>
  &#8226;   <a href="#struct">struct</a>
  &#8226;   <a href="#threading">threading</a>
+ &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#typing">typing</a>
 
   </div>
@@ -26817,13 +26840,14 @@ imported by:
 
 <div class="node">
   <a name="ui_plot"></a>
-  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/ui_plot.py" type="text/plain"><tt>ui_plot</tt></a>
+  <a target="code" href="///D:/V_QI/PoC/python_scripts/cps_ui_tool/src/ui_plot.py" type="text/plain"><tt>ui_plot</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#matplotlib">matplotlib</a>
  &#8226;   <a href="#matplotlib.backends.backend_tkagg">matplotlib.backends.backend_tkagg</a>
  &#8226;   <a href="#matplotlib.figure">matplotlib.figure</a>
+ &#8226;   <a href="#project_paths">project_paths</a>
  &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#tkinter">tkinter</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>

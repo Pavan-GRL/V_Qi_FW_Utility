@@ -1,0 +1,33 @@
+Loading PCAP file...
+Extracting FSK packets...
+
+Total FSK packets found: 15379
+
+================================================================================
+CHECKING SEQUENCES 20-170 (where packet loss occurred)
+================================================================================
+Wireshark Pkt #   29 | Time: 1774445439.583514 | Delta:   0.000ms | Seq:  20 | Records: 170
+Wireshark Pkt #   30 | Time: 1774445439.583514 | Delta:   0.000ms | Seq:  21 | Records: 170
+Wireshark Pkt #   31 | Time: 1774445439.583514 | Delta:   0.000ms | Seq:  22 | Records: 170
+Wireshark Pkt #   32 | Time: 1774445439.583514 | Delta:   0.000ms | Seq:  23 | Records: 170
+Wireshark Pkt #   33 | Time: 1774445439.586691 | Delta:   3.177ms | Seq: 165 | Records: 170 <-- GAP!
+Wireshark Pkt #   34 | Time: 1774445439.587436 | Delta:   0.745ms | Seq: 166 | Records: 170
+Wireshark Pkt #   35 | Time: 1774445439.588179 | Delta:   0.743ms | Seq: 167 | Records: 170
+Wireshark Pkt #   36 | Time: 1774445439.588925 | Delta:   0.746ms | Seq: 168 | Records: 170
+Wireshark Pkt #   37 | Time: 1774445439.591413 | Delta:   2.488ms | Seq: 169 | Records: 170
+Wireshark Pkt #   38 | Time: 1774445439.596511 | Delta:   5.098ms | Seq: 170 | Records: 170
+
+================================================================================
+SUMMARY OF GAPS
+================================================================================
+
+Found 15351 gaps in sequence:
+
+Traceback (most recent call last):
+  File "D:\V_QI\PoC\python_scripts\cps_ui_tool\check_sequences.py", line 98, in <module>
+    print(f"  Gap: seq {gap['before']:3d} \u2192 {gap['after']:3d}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 15: character maps to <undefined>

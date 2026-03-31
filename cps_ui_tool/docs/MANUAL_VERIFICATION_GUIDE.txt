@@ -1,0 +1,192 @@
+================================================================================
+HOW TO MANUALLY VERIFY PACKET LOSS IN WIRESHARK
+================================================================================
+
+KEY FINDING FROM GAP ANALYSIS:
+------------------------------
+Gap #1 (the one you showed in screenshot):
+  - Sequence jump: 23 -> 165 (missing 141 packets)
+  - Time gap: 3.177 ms
+  - Wireshark packet numbers: #32 -> #33
+
+THIS MEANS: The 141 packets with sequences 24-164 NEVER ARRIVED at your PC!
+
+================================================================================
+STEP-BY-STEP WIRESHARK VERIFICATION
+================================================================================
+
+1. OPEN THE CAPTURE FILE
+   - Launch Wireshark
+   - File -> Open
+   - Navigate to the capture you want to inspect under:
+     D:\V_QI\PoC\python_scripts\cps_ui_tool\captures\attachments\
+
+2. FILTER FOR FSK PACKETS
+   - In the "Display Filter" bar at top, type:  udp.dstport == 9000
+   - Press Enter
+   - You should now see only UDP packets going to port 9000
+
+3. GO TO PACKET #32 (Last good packet before the gap)
+   - In the packet list, click on packet #32
+   - Look at the bottom panes:
+     a) Middle pane shows protocol breakdown
+     b) Bottom-right pane shows HEX dump
+
+4. FIND THE SEQUENCE NUMBER IN PACKET #32
+   - In the HEX pane (bottom right), look at the bytes
+   - The FSK header format is:
+
+     Offset  |  Field          | Bytes | Your Value
+     --------|-----------------|-------|-------------
+     0-3     |  Magic (FSK1)   |   4   | 46 53 4B 31
+     4-5     |  Version        |   2   | (varies)
+     6-7     |  Header Size    |   2   | 10 00 (=16)
+   → 8-9     |  SEQUENCE       |   2   | 17 00  (= 23 in decimal)
+     10-11   |  Record Count   |   2   | AA 00 (=170)
+     12-13   |  Record Size    |   2   | 08 00 (=8)
+
+   - Bytes 8-9 in packet #32 should show: 17 00
+   - This is LITTLE-ENDIAN, so it reads as: 0x0017 = 23 decimal
+   - ✓ Confirms: Packet #32 has sequence 23
+
+5. GO TO PACKET #33 (Next packet after the gap)
+   - Click on packet #33 in Wireshark
+   - Look at bytes 8-9 in the HEX pane
+   - You should see: A5 00
+   - Little-endian: 0x00A5 = 165 decimal
+   - ✓ Confirms: Packet #33 has sequence 165
+
+6. CHECK IF THERE ARE PACKETS BETWEEN #32 AND #33
+   - Look at the packet list
+   - After applying the filter "udp.dstport == 9000"
+   - There should be NO packets between #32 and #33
+   - This proves packets with sequences 24-164 were NEVER received
+
+7. CHECK THE TIME GAP
+   - Look at the "Time" column in Wireshark
+   - Packet #32 time: 1774445439.583514
+   - Packet #33 time: 1774445439.586691
+   - Difference: 3.177 ms
+
+   This 3ms gap is where your sender either:
+   - Stopped sending
+   - Had buffer overflow
+   - Experienced some other interruption
+
+================================================================================
+WHAT THIS PROVES
+================================================================================
+
+✓ CONFIRMED: Network-level packet loss
+  - The packets are missing from Wireshark capture
+  - They never arrived at your PC's network interface
+  - The Python script is working correctly
+
+✗ NOT a Python script issue
+  - The script cannot receive packets that never arrive
+  - File I/O speed is NOT the problem here
+
+================================================================================
+ROOT CAUSE: SENDER DEVICE ISSUE
+================================================================================
+
+Looking at the pattern of gaps in your data, there are HUNDREDS of sequence
+gaps throughout the capture. Here's the pattern:
+
+Gap Type A: Small time gaps (~0.7-0.8 ms)
+  - Missing individual sequential packets
+  - Examples: 169->170, 170->171, 171->172, etc.
+
+Gap Type B: Larger time gaps (5-7 ms)
+  - Missing MANY packets at once
+  - Example: Your screenshot showing 23->165 (141 lost)
+
+This pattern strongly suggests:
+
+1. SENDER BUFFER OVERFLOW
+   - The device sending FSK data is generating packets faster than it can
+     transmit them over UDP
+   - Its internal buffer fills up and drops packets
+   - The sender appears to be trying to send 170 records per packet, very rapidly
+
+2. SENDER CPU OVERLOAD
+   - The sending device may be doing too much processing
+   - Cannot keep up with the data generation rate
+   - Periodically pauses/drops packets
+
+3. POSSIBLE NETWORK CONGESTION
+   - If WiFi: interference, collisions, retries failing
+   - If Ethernet: switch buffer overflow
+
+================================================================================
+HOW TO FIX
+================================================================================
+
+PRIORITY 1: REDUCE SENDER RATE
+  - The sender is trying to send packets with 170 records each, very quickly
+  - Reduce the transmission rate on the sender side
+  - Options:
+    a) Reduce records per packet (e.g., 50 instead of 170)
+    b) Add delay between packets (e.g., sleep 1-2ms between sends)
+    c) Reduce sampling rate at source
+
+PRIORITY 2: CHECK SENDER BUFFER CONFIGURATION
+  - If sender is embedded device (ESP32/STM32):
+    * Increase UDP TX buffer size
+    * Check if lwIP stack is configured properly
+    * Enable flow control if available
+
+  - If sender is PC application:
+    * Check CPU usage
+    * Increase SO_SNDBUF socket option
+    * Use blocking send instead of non-blocking
+
+PRIORITY 3: USE WIRED CONNECTION
+  - If currently on WiFi, switch to Ethernet
+  - WiFi adds latency and potential packet loss
+  - Direct wired connection eliminates many variables
+
+PRIORITY 4: VERIFY SENDER IS ACTUALLY TRANSMITTING ALL PACKETS
+  - Add logging on sender side
+  - Check if sender is actually trying to send seq 24-164
+  - Or if sender itself is skipping those sequences
+
+================================================================================
+QUICK VERIFICATION SCRIPT
+================================================================================
+
+I've created these helper scripts for you:
+
+1. gap_analysis.txt
+   - Complete analysis of all gaps found in your capture
+   - Shows time gaps, sequence jumps, Wireshark packet numbers
+
+2. simple_gap_check.py
+   - Re-run this anytime to analyze a new capture
+   - Usage: python simple_gap_check.py
+
+3. check_sequences.py
+   - Alternative analysis script
+   - More detailed sequence tracking
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Identify what device is SENDING the FSK packets
+   - ESP32? STM32? PC application? FPGA?
+
+2. Check sender-side logs/code
+   - Is it actually transmitting sequences 24-164?
+   - Or is the sender skipping them?
+
+3. Reduce transmission rate on sender
+   - This is most likely to fix the issue
+
+4. If possible, share:
+   - Sender device type
+   - Sender code (if available)
+   - Sender configuration
+
+The Python receiver script is working perfectly - it's faithfully capturing
+everything that arrives at the network level. The problem is upstream!

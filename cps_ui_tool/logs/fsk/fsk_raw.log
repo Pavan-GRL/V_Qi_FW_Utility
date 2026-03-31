@@ -1,0 +1,24 @@
+[INFO] FSK UDP listener started on port 9000
+[2026-03-20 14:16:14.434] RX 40 bytes from 127.0.0.1:56675  hex=46534b31010010006300000003000800010000005aa50100020000005aa5020303000000adde0101
+  seq=99  records=3  ver=1  rec_size=8  mode=TEST
+  [WARN] rec 2: bad pattern 0xDEAD (expected 0xA55A)
+[INFO] FSK UDP listener stopped
+[INFO] FSK UDP listener started on port 9000
+[2026-03-20 14:16:16.443] RX 40 bytes from 127.0.0.1:56676  hex=46534b31010010002a00000003000800b004f1fff40101029c04140008020303ba040000e0010401
+  seq=42  records=3  ver=1  rec_size=8  mode=NORMAL
+[INFO] FSK UDP listener stopped
+[INFO] FSK packet processor started
+[INFO] UDP receive buffer size set to 8388608 bytes
+[INFO] FSK UDP listener started on port 9000
+[2026-03-31 15:21:02.338] RX 40 bytes  hex=46534b31010010006300000003000800010000005aa50100020000005aa50203...
+  seq=99  records=3  ver=1  rec_size=8  mode=TEST
+  [WARN] rec 2: bad pattern 0xDEAD (expected 0xA55A)
+[INFO] FSK UDP listener stopped
+[INFO] FSK packet processor stopped (processed 1 total, queue-dropped 0 total)
+[INFO] UDP receive buffer size set to 8388608 bytes
+[INFO] FSK packet processor started
+[INFO] FSK UDP listener started on port 9000
+[2026-03-31 15:21:04.393] RX 40 bytes  hex=46534b31010010002a00000003000800b004f1fff40101029c04140008020303...
+  seq=42  records=3  ver=1  rec_size=8  mode=NORMAL
+[INFO] FSK UDP listener stopped
+[INFO] FSK packet processor stopped (processed 1 total, queue-dropped 0 total)

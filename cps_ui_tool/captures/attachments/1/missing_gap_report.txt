@@ -1,0 +1,9 @@
+FSK GAP ANALYSIS REPORT
+==========================================================================================
+Generated: 2026-03-26T19:03:06
+Input capture: D:\V_QI\PoC\python_scripts\cps_ui_tool\attachments\does_not_exist.pcapng
+Output report: D:\V_QI\PoC\python_scripts\cps_ui_tool\attachments\missing_gap_report.txt
+
+Analysis failed.
+Error type: FileNotFoundError
+Error: Capture file not found: attachments\does_not_exist.pcapng

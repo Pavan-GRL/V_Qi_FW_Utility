@@ -1,10 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//d/V_QI/**)",
-      "Bash(python -m py_compile d:V_QIPoCpython_scriptscps_ui_tooludp_fsk.py)",
-      "Bash(python -m py_compile \"d:\\V_QI\\PoC\\python_scripts\\cps_ui_tool\\udp_fsk.py\")",
-      "Bash(python -c \"import net_client; print(''net_client.py OK'')\")"
+      "Bash(python src/app.py)",
+      "Bash(dir assets /b)"
     ],
     "deny": [],
     "ask": []
