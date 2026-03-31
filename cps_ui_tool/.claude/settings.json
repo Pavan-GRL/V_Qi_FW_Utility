@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m PyInstaller --onefile --windowed --name \"GRL_V_QI_UTILITY\" --collect-data matplotlib --collect-data mpl_toolkits app.py)"
+    ]
+  }
+}
