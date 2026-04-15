@@ -11,10 +11,12 @@ from typing import Optional
 import traceback
 
 from net_client import NetClient
+from usb_client import USBClient, HAS_USB
 from logger import LOG_DIR, append_text
 from protocol import hex_dump_multiline
 from ui_plot import PlotPanel
 from udp_fsk import FSKReceiver
+from udp_fsk_r2 import FSKR2Receiver
 from esp_flasher import (
     ESPFlasher,
     CHIP_NAMES,
@@ -262,7 +264,8 @@ class App(tk.Tk):
             pass  # Use default icon if loading fails
 
         self.ui_q: "queue.Queue[tuple[str, object]]" = queue.Queue()
-        self.client: NetClient | None = None
+        self.client: "NetClient | USBClient | None" = None
+        self.conn_type_var = tk.StringVar(value="Ethernet")
         self._fw_log_lock = threading.Lock()
         self._fw_log_file: str | None = None
 
@@ -301,15 +304,41 @@ class App(tk.Tk):
             tk.Label(logo_frame, image=self._logo_img,
                      bg=_C_WHITE, bd=0, padx=8, pady=4).pack()
 
-        ttk.Label(top, text="IP:", style="TopBar.TLabel").pack(side=tk.LEFT, padx=(12, 0), pady=8)
-        self.ip_var = tk.StringVar(value="192.168.255.10")
-        ttk.Entry(top, textvariable=self.ip_var, width=18,
-                  style="TopBar.TEntry").pack(side=tk.LEFT, padx=(6, 12), pady=8)
+        # ── Connection type selector ──────────────────────────────────────────
+        # Style for TopBar radio buttons (white text on navy, toggles on select)
+        s = ttk.Style(self)
+        s.configure("TopBar.TRadiobutton",
+                     background=_C_BLUE, foreground=_C_WHITE,
+                     font=("Segoe UI", 9), focuscolor=_C_BLUE)
+        s.map("TopBar.TRadiobutton",
+              background=[("active", _C_BLUE_LT)],
+              foreground=[("disabled", _C_TEXT_DIM)])
 
-        ttk.Label(top, text="Port:", style="TopBar.TLabel").pack(side=tk.LEFT)
+        ttk.Label(top, text="Type:", style="TopBar.TLabel").pack(
+            side=tk.LEFT, padx=(12, 0), pady=8)
+        self.rb_eth = ttk.Radiobutton(
+            top, text="Ethernet", variable=self.conn_type_var, value="Ethernet",
+            style="TopBar.TRadiobutton", command=self._on_conn_type_change)
+        self.rb_eth.pack(side=tk.LEFT, padx=(4, 0), pady=8)
+        self.rb_usb = ttk.Radiobutton(
+            top, text="USB", variable=self.conn_type_var, value="USB",
+            style="TopBar.TRadiobutton", command=self._on_conn_type_change)
+        self.rb_usb.pack(side=tk.LEFT, padx=(4, 10), pady=8)
+
+        # ── Ethernet IP / Port ────────────────────────────────────────────────
+        self._eth_lbl_ip = ttk.Label(top, text="IP:", style="TopBar.TLabel")
+        self._eth_lbl_ip.pack(side=tk.LEFT, padx=(0, 0), pady=8)
+        self.ip_var = tk.StringVar(value="192.168.255.10")
+        self._eth_entry_ip = ttk.Entry(top, textvariable=self.ip_var, width=18,
+                                        style="TopBar.TEntry")
+        self._eth_entry_ip.pack(side=tk.LEFT, padx=(6, 6), pady=8)
+
+        self._eth_lbl_port = ttk.Label(top, text="Port:", style="TopBar.TLabel")
+        self._eth_lbl_port.pack(side=tk.LEFT, pady=8)
         self.port_var = tk.IntVar(value=PORT_DEFAULT)
-        ttk.Entry(top, textvariable=self.port_var, width=8,
-                  style="TopBar.TEntry").pack(side=tk.LEFT, padx=(6, 12), pady=8)
+        self._eth_entry_port = ttk.Entry(top, textvariable=self.port_var, width=8,
+                                          style="TopBar.TEntry")
+        self._eth_entry_port.pack(side=tk.LEFT, padx=(6, 12), pady=8)
 
         self.btn_connect = ttk.Button(top, text="Connect", command=self.on_connect,
                                       style="TopBar.TButton")
@@ -435,6 +464,68 @@ class App(tk.Tk):
                    command=self.send_custom_hex).pack(
             side=tk.TOP, anchor=tk.E, padx=8, pady=(0, 8))
 
+        # USB Control Transfer (EP0) – shown only when USB mode is active
+        self._usb_ctrl_lf = ttk.LabelFrame(left, text="USB Control Transfer  (EP0)")
+        # Packed/unpacked dynamically by _on_conn_type_change()
+
+        # Row 1: bmRequestType | bRequest
+        _r1 = ttk.Frame(self._usb_ctrl_lf)
+        _r1.pack(fill=tk.X, padx=8, pady=(6, 2))
+        ttk.Label(_r1, text="bmReqType:").pack(side=tk.LEFT)
+        self._usb_bm_req_type = tk.StringVar(value="C0")
+        ttk.Entry(_r1, textvariable=self._usb_bm_req_type, width=5).pack(
+            side=tk.LEFT, padx=(4, 12))
+        ttk.Label(_r1, text="bRequest:").pack(side=tk.LEFT)
+        self._usb_b_request = tk.StringVar(value="00")
+        ttk.Entry(_r1, textvariable=self._usb_b_request, width=5).pack(
+            side=tk.LEFT, padx=(4, 0))
+
+        # Row 2: wValue | wIndex
+        _r2 = ttk.Frame(self._usb_ctrl_lf)
+        _r2.pack(fill=tk.X, padx=8, pady=2)
+        ttk.Label(_r2, text="wValue:").pack(side=tk.LEFT)
+        self._usb_w_value = tk.StringVar(value="0000")
+        ttk.Entry(_r2, textvariable=self._usb_w_value, width=6).pack(
+            side=tk.LEFT, padx=(4, 12))
+        ttk.Label(_r2, text="wIndex:").pack(side=tk.LEFT)
+        self._usb_w_index = tk.StringVar(value="0000")
+        ttk.Entry(_r2, textvariable=self._usb_w_index, width=6).pack(
+            side=tk.LEFT, padx=(4, 0))
+
+        # Row 3: Direction
+        _r3 = ttk.Frame(self._usb_ctrl_lf)
+        _r3.pack(fill=tk.X, padx=8, pady=2)
+        ttk.Label(_r3, text="Direction:").pack(side=tk.LEFT)
+        self._usb_dir_var = tk.StringVar(value="IN")
+        ttk.Radiobutton(_r3, text="IN",  variable=self._usb_dir_var, value="IN",
+                         command=self._usb_dir_changed).pack(side=tk.LEFT, padx=(6, 4))
+        ttk.Radiobutton(_r3, text="OUT", variable=self._usb_dir_var, value="OUT",
+                         command=self._usb_dir_changed).pack(side=tk.LEFT)
+
+        # Row 4: OUT data / IN length (mutually toggled)
+        _r4 = ttk.Frame(self._usb_ctrl_lf)
+        _r4.pack(fill=tk.X, padx=8, pady=2)
+        self._usb_out_data_lbl = ttk.Label(_r4, text="OUT data (hex):")
+        self._usb_out_data_lbl.pack(side=tk.LEFT)
+        self._usb_out_data_var = tk.StringVar(value="")
+        self._usb_out_data_entry = ttk.Entry(_r4, textvariable=self._usb_out_data_var, width=16)
+        self._usb_out_data_entry.pack(side=tk.LEFT, padx=(4, 0))
+
+        _r5 = ttk.Frame(self._usb_ctrl_lf)
+        _r5.pack(fill=tk.X, padx=8, pady=2)
+        self._usb_in_len_lbl = ttk.Label(_r5, text="IN length (bytes):")
+        self._usb_in_len_lbl.pack(side=tk.LEFT)
+        self._usb_in_len_var = tk.StringVar(value="64")
+        self._usb_in_len_entry = ttk.Entry(_r5, textvariable=self._usb_in_len_var, width=8)
+        self._usb_in_len_entry.pack(side=tk.LEFT, padx=(4, 0))
+
+        ttk.Button(self._usb_ctrl_lf, text="Execute Control Transfer",
+                   command=self._send_usb_control).pack(
+            side=tk.TOP, anchor=tk.E, padx=8, pady=(4, 8))
+
+        # Initial direction state
+        self._usb_dir_changed()
+
         # ---- Right panel: TX/RX monitor ----
         txrx = ttk.LabelFrame(console_wrap, text="TX/RX Monitor")
         txrx.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, pady=4, padx=(0, 6))
@@ -532,24 +623,45 @@ class App(tk.Tk):
         if self.client:
             return
 
-        ip = self.ip_var.get().strip()
-        port = int(self.port_var.get())
+        conn_type = self.conn_type_var.get()
 
-        self.client = NetClient(
-            ip=ip,
-            port=port,
-            on_status=lambda msg: self.ui_q.put(("status", msg)),
-            on_cps=lambda info: self.ui_q.put(("cps", info)),
-            on_tx=lambda hexs, tag: self.ui_q.put(("tx", (hexs, tag))),
-            on_rx=lambda hexs, tag: self.ui_q.put(("rx", (hexs, tag))),
-            on_retry_prompt=self._retry_prompt_dialog,
-        )
+        if conn_type == "USB":
+            if not HAS_USB:
+                messagebox.showerror(
+                    "pyusb not installed",
+                    "USB support requires pyusb.\n\nInstall it with:\n  pip install pyusb\n\n"
+                    "Also ensure the WinUSB driver is installed for VID_227F/PID_0006.",
+                )
+                return
+            self.client = USBClient(
+                on_status=lambda msg: self.ui_q.put(("status", msg)),
+                on_cps=lambda info: self.ui_q.put(("cps", info)),
+                on_tx=lambda hexs, tag: self.ui_q.put(("tx", (hexs, tag))),
+                on_rx=lambda hexs, tag: self.ui_q.put(("rx", (hexs, tag))),
+                on_retry_prompt=self._retry_prompt_dialog,
+            )
+        else:
+            ip   = self.ip_var.get().strip()
+            port = int(self.port_var.get())
+            self.client = NetClient(
+                ip=ip,
+                port=port,
+                on_status=lambda msg: self.ui_q.put(("status", msg)),
+                on_cps=lambda info: self.ui_q.put(("cps", info)),
+                on_tx=lambda hexs, tag: self.ui_q.put(("tx", (hexs, tag))),
+                on_rx=lambda hexs, tag: self.ui_q.put(("rx", (hexs, tag))),
+                on_retry_prompt=self._retry_prompt_dialog,
+            )
+
         self.client.plot_enabled = False   # Start/Pause/Stop buttons control this
         self.client.start()
 
         self.btn_connect.configure(state=tk.DISABLED)
         self.btn_disconnect.configure(state=tk.NORMAL)
-        self.status_var.set("Connecting...")
+        # Lock type selector while connected
+        self.rb_eth.configure(state=tk.DISABLED)
+        self.rb_usb.configure(state=tk.DISABLED)
+        self.status_var.set("Connecting…" if conn_type == "Ethernet" else "Opening USB…")
 
     def on_disconnect(self):
         if not self.client:
@@ -559,7 +671,67 @@ class App(tk.Tk):
 
         self.btn_connect.configure(state=tk.NORMAL)
         self.btn_disconnect.configure(state=tk.DISABLED)
+        # Re-enable type selector
+        self.rb_eth.configure(state=tk.NORMAL)
+        self.rb_usb.configure(state=tk.NORMAL)
         self.status_var.set("Disconnected")
+
+    # ---------------- Connection type helpers ----------------
+
+    def _on_conn_type_change(self):
+        """Show/hide the USB Control Transfer panel and IP/Port fields."""
+        is_usb = self.conn_type_var.get() == "USB"
+        if is_usb:
+            self._usb_ctrl_lf.pack(side=tk.TOP, fill=tk.X, padx=6, pady=4)
+        else:
+            self._usb_ctrl_lf.pack_forget()
+
+    def _usb_dir_changed(self):
+        """Toggle OUT-data vs IN-length entry fields based on direction."""
+        is_in = self._usb_dir_var.get() == "IN"
+        state_in  = tk.NORMAL if is_in  else tk.DISABLED
+        state_out = tk.NORMAL if not is_in else tk.DISABLED
+        self._usb_in_len_entry.configure(state=state_in)
+        self._usb_out_data_entry.configure(state=state_out)
+
+    def _send_usb_control(self):
+        """Execute a USB EP0 control transfer and log result to TX/RX monitor."""
+        if not isinstance(self.client, USBClient):
+            self._txrx_line(f"{host_ts_short()}  ⚠ USB not connected")
+            return
+        try:
+            bm   = int(self._usb_bm_req_type.get().strip(), 16)
+            br   = int(self._usb_b_request.get().strip(), 16)
+            wv   = int(self._usb_w_value.get().strip(), 16)
+            wi   = int(self._usb_w_index.get().strip(), 16)
+        except ValueError as e:
+            self._txrx_line(f"{host_ts_short()}  ✖ Invalid control field: {e}")
+            return
+
+        direction = self._usb_dir_var.get()
+        log_req = (
+            f"bmReqType=0x{bm:02X} bRequest=0x{br:02X} "
+            f"wValue=0x{wv:04X} wIndex=0x{wi:04X} dir={direction}"
+        )
+        try:
+            if direction == "OUT":
+                raw = self._usb_out_data_var.get().strip()
+                data = bytes.fromhex(raw.replace(" ", "")) if raw else b""
+                self.client.send_control(bm, br, wv, wi, data)
+                self._txrx_line(
+                    f"{host_ts_short()}  USB-CTRL OUT: {log_req}  "
+                    f"data=[{' '.join(f'{x:02X}' for x in data)}]"
+                )
+            else:  # IN
+                length = int(self._usb_in_len_var.get().strip())
+                result = self.client.send_control(bm, br, wv, wi, length)
+                rx_hex = " ".join(f"{x:02X}" for x in result) if result else "(empty)"
+                self._txrx_line(
+                    f"{host_ts_short()}  USB-CTRL IN:  {log_req}  "
+                    f"len={length}  rx=[{rx_hex}]"
+                )
+        except Exception as e:
+            self._txrx_line(f"{host_ts_short()}  ✖ Control transfer error: {e}")
 
     # ---------------- Operations ----------------
     # Masking: 01 09 00 01 00 02 00 <target> <1=mask, 0=unmask>
@@ -700,6 +872,8 @@ class App(tk.Tk):
     def process_ui_queue(self):
         fsk_lines: list[str] = []
         fsk_packets = 0
+        fsk_r2_lines: list[str] = []
+        fsk_r2_packets = 0
         try:
             while True:
                 kind, payload = self.ui_q.get_nowait()
@@ -727,11 +901,24 @@ class App(tk.Tk):
                     fsk_packets += 1
                     fsk_lines.append(self._fsk_format_packet_summary(seq, rec_count, preview_records))
 
+                elif kind == "fsk_r2":
+                    seq, rec_count, preview_records = payload  # type: ignore
+                    fsk_r2_packets += 1
+                    fsk_r2_lines.append(
+                        self._fsk_r2_format_packet_summary(seq, rec_count, preview_records)
+                    )
+
+                elif kind == "fsk_r2_status":
+                    self._fsk_r2_status_var.set(str(payload))
+                    self._fsk_r2_append_batch(f"[status] {payload}\n", 0)
+
         except queue.Empty:
             pass
         finally:
             if fsk_lines:
                 self._fsk_append_batch("".join(fsk_lines), fsk_packets)
+            if fsk_r2_lines:
+                self._fsk_r2_append_batch("".join(fsk_r2_lines), fsk_r2_packets)
             self.after(50, self.process_ui_queue)
 
     # ---------------- CPS decoded block printing + plot update ----------------
@@ -888,10 +1075,20 @@ class App(tk.Tk):
     # ============================================================
     def _build_fsk_tab(self):
         self._fsk_receiver: Optional[FSKReceiver] = None
+        self._fsk_r2_receiver: Optional[FSKR2Receiver] = None
         self._fsk_pkt_count = 0
+        self._fsk_r2_pkt_count = 0
+
+        self._fsk_tabs = ttk.Notebook(self.tab_fsk)
+        self._fsk_tabs.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=(8, 10))
+
+        self._fsk_tab_r1 = ttk.Frame(self._fsk_tabs)
+        self._fsk_tab_r2 = ttk.Frame(self._fsk_tabs)
+        self._fsk_tabs.add(self._fsk_tab_r1, text="R1")
+        self._fsk_tabs.add(self._fsk_tab_r2, text="R2")
 
         # Top bar: Start / Stop / status / logging options
-        top = ttk.Frame(self.tab_fsk)
+        top = ttk.Frame(self._fsk_tab_r1)
         top.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(8, 4))
 
         ttk.Button(top, text="Start Capture",
@@ -912,7 +1109,10 @@ class App(tk.Tk):
                         variable=self._fsk_enable_csv).pack(side=tk.LEFT)
 
         # Monitor text area (read-only for now — will show decoded data later)
-        mon_frame = ttk.LabelFrame(self.tab_fsk, text="FSK Monitor (check boxes above to enable file logging)")
+        mon_frame = ttk.LabelFrame(
+            self._fsk_tab_r1,
+            text="FSK R1 Monitor (check boxes above to enable file logging)"
+        )
         mon_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=(4, 10))
 
         self._fsk_text = tk.Text(mon_frame, state=tk.DISABLED, wrap=tk.NONE,
@@ -922,6 +1122,8 @@ class App(tk.Tk):
         self._fsk_text.configure(yscrollcommand=fsk_sb.set)
         self._fsk_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         fsk_sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self._build_fsk_r2_tab(self._fsk_tab_r2)
 
     def _fsk_on_packet(self, seq: int, rec_count: int, preview_records: list):
         """Called from FSKReceiver thread — schedule UI update."""
@@ -957,6 +1159,8 @@ class App(tk.Tk):
     def _fsk_start(self):
         if self._fsk_receiver and self._fsk_receiver.running:
             return
+        if self._fsk_r2_receiver and self._fsk_r2_receiver.running:
+            self._fsk_r2_stop()
         self._fsk_pkt_count = 0
 
         # Get logging preferences from checkboxes
@@ -991,6 +1195,146 @@ class App(tk.Tk):
             self._fsk_receiver.stop()
             self._fsk_receiver = None
         self._fsk_status_var.set("Stopped")
+
+    def _build_fsk_r2_tab(self, parent: ttk.Frame):
+        top = ttk.Frame(parent)
+        top.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(8, 4))
+
+        ttk.Button(top, text="Start Capture",
+                   command=self._fsk_r2_start).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(top, text="Stop Capture",
+                   command=self._fsk_r2_stop).pack(side=tk.LEFT, padx=(0, 12))
+
+        self._fsk_r2_status_var = tk.StringVar(value="Stopped")
+        ttk.Label(top, textvariable=self._fsk_r2_status_var).pack(side=tk.LEFT, padx=(0, 20))
+
+        self._fsk_r2_enable_log = tk.BooleanVar(value=False)
+        self._fsk_r2_enable_csv = tk.BooleanVar(value=True)
+
+        ttk.Checkbutton(top, text="Log to .log file",
+                        variable=self._fsk_r2_enable_log).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Checkbutton(top, text="Log to .csv file",
+                        variable=self._fsk_r2_enable_csv).pack(side=tk.LEFT)
+
+        mon_frame = ttk.LabelFrame(
+            parent,
+            text="FSK R2 Monitor (record_size=2 uses R2 software decode; other sizes use R1 fallback)"
+        )
+        mon_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=(4, 10))
+
+        self._fsk_r2_text = tk.Text(mon_frame, state=tk.DISABLED, wrap=tk.NONE,
+                                    bg=_C_WHITE, fg=_C_TEXT,
+                                    font=("Consolas", 9))
+        fsk_r2_sb = ttk.Scrollbar(mon_frame, command=self._fsk_r2_text.yview)
+        self._fsk_r2_text.configure(yscrollcommand=fsk_r2_sb.set)
+        self._fsk_r2_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        fsk_r2_sb.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def _fsk_r2_on_packet(self, seq: int, rec_count: int, preview_records: list):
+        self.ui_q.put(("fsk_r2", (seq, rec_count, preview_records)))
+
+    def _fsk_r2_on_status(self, message: str):
+        self.ui_q.put(("fsk_r2_status", message))
+
+    def _fsk_r2_format_packet_summary(self, seq: int, rec_count: int, preview_records: list) -> str:
+        variant = "R2"
+        rec_size = "?"
+        if preview_records:
+            variant_value = preview_records[0].get("decoder_variant")
+            if variant_value == "r1":
+                variant = "R1-fallback"
+            elif variant_value == "r2":
+                variant = "R2"
+            rec_size = str(preview_records[0].get("record_size", "?"))
+
+        lines = [f"[seq={seq}] {rec_count} records  mode={variant}  rec_size={rec_size}"]
+        for i, r in enumerate(preview_records):
+            if "message" in r:
+                lines.append(f"  #{i:3d}  {r['message']}  state={r.get('state', '-')}")
+                continue
+
+            if r.get("decoder_variant") == "r1" or ("diff" not in r and "delta" in r):
+                lines.append(
+                    f"  #{i:3d}  period={r['period']:5d}  delta={r['delta']:+6d}  "
+                    f"ma={r['ma']:5d}  tog={int(r['toggled'])}  vt={int(r['valid_transition'])}  "
+                    f"sp={int(r['sign_positive'])}  state={r['state']}"
+                )
+                continue
+
+            bit_text = "-" if r["bit"] == "" else str(r["bit"])
+            symbol = r["symbol"] or "-"
+            extras: list[str] = []
+            if r["byte_hex"]:
+                extras.append(f"byte={r['byte_hex']}")
+            if r["frame_hex"]:
+                extras.append(f"frame={r['frame_hex']}")
+            if r["frame_kind"]:
+                extras.append(f"kind={r['frame_kind']}")
+            if r["frame_status"]:
+                extras.append(f"status={r['frame_status']}")
+            extra_text = ""
+            if extras:
+                extra_text = "  " + "  ".join(extras)
+
+            lines.append(
+                f"  #{i:3d}  period={r['period']:5d}  ma={r['ma']:5d}  "
+                f"diff={r['diff']:+6d}  ad={r['abs_diff']:5d}  "
+                f"vt={int(r['valid_transition'])} tog={int(r['toggled'])}  "
+                f"sign={r['sign']:+2d}  mode={r['timing_mode']:<5}  "
+                f"cnt={r['period_counter']:4d}  sym={symbol:<7} bit={bit_text}  "
+                f"bc={r['bit_count']:3d}  state={r['state']}{extra_text}"
+            )
+
+        remaining = rec_count - len(preview_records)
+        if remaining > 0:
+            lines.append(f"  ... {remaining} more record(s)")
+        return "\n".join(lines) + "\n"
+
+    def _fsk_r2_append_batch(self, text: str, packets_added: int):
+        self._fsk_r2_text.configure(state=tk.NORMAL)
+        self._fsk_r2_text.insert(tk.END, text)
+        self._fsk_r2_text.see(tk.END)
+        self._fsk_r2_text.configure(state=tk.DISABLED)
+        self._fsk_r2_pkt_count += packets_added
+        self._fsk_r2_status_var.set(f"Capturing - {self._fsk_r2_pkt_count} packets")
+
+    def _fsk_r2_start(self):
+        if self._fsk_r2_receiver and self._fsk_r2_receiver.running:
+            return
+        if self._fsk_receiver and self._fsk_receiver.running:
+            self._fsk_stop()
+        self._fsk_r2_pkt_count = 0
+
+        enable_log = self._fsk_r2_enable_log.get()
+        enable_csv = self._fsk_r2_enable_csv.get()
+
+        self._fsk_r2_receiver = FSKR2Receiver(
+            on_packet=self._fsk_r2_on_packet,
+            on_status=self._fsk_r2_on_status,
+            queue_size=10000,
+            enable_log_file=enable_log,
+            enable_csv_file=enable_csv,
+            socket_buffer_size=8 * 1024 * 1024,
+            ui_record_limit=3
+        )
+        self._fsk_r2_receiver.start()
+
+        log_status = []
+        if enable_log:
+            log_status.append(".log")
+        if enable_csv:
+            log_status.append(".csv")
+
+        if log_status:
+            self._fsk_r2_status_var.set(f"Capturing -> {' + '.join(log_status)}")
+        else:
+            self._fsk_r2_status_var.set("Capturing (no file logging)")
+
+    def _fsk_r2_stop(self):
+        if self._fsk_r2_receiver:
+            self._fsk_r2_receiver.stop()
+            self._fsk_r2_receiver = None
+        self._fsk_r2_status_var.set("Stopped")
 
     # ============================================================
     #  FW Update tab  (ESP flash via STM UART bridge)
