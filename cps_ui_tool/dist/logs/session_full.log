@@ -1,0 +1,86 @@
+[2026-04-27 10:43:35.956] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 10:43:44.758] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 10:43:44.764] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 10:43:53.878] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 10:44:09.256] [ERROR] Socket error: [WinError 10038] An operation was attempted on something that is not a socket
+[2026-04-27 10:44:09.258] [INFO] Reconnecting...
+[2026-04-27 10:44:10.262] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 10:44:10.844] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 10:44:14.955] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 10:44:15.031] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 10:44:26.208] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 10:44:50.075] [INFO] Exclusive socket requested by CPS FW status
+[2026-04-27 10:44:50.125] [INFO] Exclusive socket granted to CPS FW status
+[2026-04-27 10:44:50.157] [INFO] Exclusive socket released by CPS FW status
+[2026-04-27 10:44:53.510] [INFO] Exclusive socket requested by CPS FW status
+[2026-04-27 10:44:53.598] [INFO] Exclusive socket granted to CPS FW status
+[2026-04-27 10:44:53.604] [INFO] Exclusive socket released by CPS FW status
+[2026-04-27 10:45:10.958] [ERROR] Socket error: [WinError 10054] An existing connection was forcibly closed by the remote host
+[2026-04-27 10:45:10.959] [INFO] Reconnecting...
+[2026-04-27 10:45:15.970] [ERROR] Connect/Run error: TimeoutError: timed out
+[2026-04-27 10:45:18.887] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 10:45:38.838] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 10:45:38.842] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 10:45:50.865] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 10:47:24.588] [ERROR] Socket error: [WinError 10054] An existing connection was forcibly closed by the remote host
+[2026-04-27 10:47:24.589] [INFO] Reconnecting...
+[2026-04-27 10:47:29.603] [ERROR] Connect/Run error: TimeoutError: timed out
+[2026-04-27 10:47:33.114] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 10:47:38.878] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 10:47:38.881] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 B0 B1
+[2026-04-27 10:47:41.536] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 10:47:41.539] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 B0 B1
+[2026-04-27 10:47:47.271] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 01 0A 00 (try=1/3)
+[2026-04-27 10:47:47.275] [RX:MANUAL_RSP] 07 0D 00 02 00 A1 00 01 00 01 0A 00 B2
+[2026-04-27 10:47:57.489] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 10:47:57.492] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 B0 B1
+[2026-04-27 10:50:01.230] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 10:50:01.259] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 10:50:22.790] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 10:54:07.957] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 01 08 00 (try=1/3)
+[2026-04-27 10:54:07.982] [RX:MANUAL_RSP] 07 0D 00 02 00 A1 00 01 00 01 08 00 00
+[2026-04-27 10:54:15.772] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 01 09 00 (try=1/3)
+[2026-04-27 10:54:15.775] [RX:MANUAL_RSP] 07 0D 00 02 00 A1 00 01 00 01 09 00 01
+[2026-04-27 10:54:33.674] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 10:54:33.701] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 41 40
+[2026-04-27 10:54:44.441] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 10:54:44.466] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 41 40
+[2026-04-27 12:33:49.350] [ERROR] Socket error: [WinError 10054] An existing connection was forcibly closed by the remote host
+[2026-04-27 12:33:49.569] [INFO] Reconnecting...
+[2026-04-27 12:33:54.746] [ERROR] Connect/Run error: TimeoutError: timed out
+[2026-04-27 15:11:14.544] [ERROR] Connect/Run error: TimeoutError: timed out
+[2026-04-27 15:13:55.351] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 15:14:03.002] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 15:14:03.005] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 41 40
+[2026-04-27 15:14:04.444] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 15:14:04.447] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 41 40
+[2026-04-27 15:14:32.587] [INFO] Exclusive socket requested by CPS FW status
+[2026-04-27 15:14:32.678] [INFO] Exclusive socket granted to CPS FW status
+[2026-04-27 15:14:32.701] [INFO] Exclusive socket released by CPS FW status
+[2026-04-27 15:15:04.047] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 15:15:04.144] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 15:15:11.226] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 15:15:26.992] [INFO] Exclusive socket requested by CPS FW status
+[2026-04-27 15:15:27.041] [INFO] Exclusive socket granted to CPS FW status
+[2026-04-27 15:15:27.068] [INFO] Exclusive socket released by CPS FW status
+[2026-04-27 15:16:42.201] [INFO] Exclusive socket requested by CPS FW status
+[2026-04-27 15:16:42.269] [INFO] Exclusive socket granted to CPS FW status
+[2026-04-27 15:16:42.295] [INFO] Exclusive socket released by CPS FW status
+[2026-04-27 15:17:45.773] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 00 00 (try=1/3)
+[2026-04-27 15:17:45.798] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 00 00 41 40
+[2026-04-27 15:17:49.124] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 01 08 00 (try=1/3)
+[2026-04-27 15:17:49.127] [RX:MANUAL_RSP] 07 0D 00 02 00 A1 00 01 00 01 08 00 00
+[2026-04-27 15:17:54.776] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 01 09 00 (try=1/3)
+[2026-04-27 15:17:54.779] [RX:MANUAL_RSP] 07 0D 00 02 00 A1 00 01 00 01 09 00 01
+[2026-04-27 15:18:00.201] [TX:MANUAL] 07 0C 00 02 00 A1 00 01 00 02 08 00 (try=1/3)
+[2026-04-27 15:18:00.226] [RX:MANUAL_RSP] 07 0E 00 02 00 A1 00 01 00 02 08 00 00 01
+[2026-04-27 15:39:28.550] [ERROR] Socket error: [WinError 10038] An operation was attempted on something that is not a socket
+[2026-04-27 15:39:28.550] [INFO] Reconnecting...
+[2026-04-27 15:39:29.553] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 15:39:57.019] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)
+[2026-04-27 15:40:35.980] [INFO] Exclusive socket requested by CPS FW update
+[2026-04-27 15:40:36.068] [INFO] Exclusive socket granted to CPS FW update
+[2026-04-27 15:40:43.403] [INFO] Exclusive socket released by CPS FW update
+[2026-04-27 15:42:37.115] [ERROR] Socket error: [WinError 10038] An operation was attempted on something that is not a socket
+[2026-04-27 15:42:37.115] [INFO] Reconnecting...
+[2026-04-27 15:42:38.120] [INFO] Connected to 192.168.255.10:5002 (API Frame Protocol - 0x01/0x07/0x02)

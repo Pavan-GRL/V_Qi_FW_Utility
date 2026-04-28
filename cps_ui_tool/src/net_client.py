@@ -135,6 +135,11 @@ class NetClient:
 
         # socket
         self._sock: Optional[socket.socket] = None
+        self._exclusive_cv = threading.Condition()
+        self._exclusive_requested = False
+        self._exclusive_active = False
+        self._exclusive_owner = ""
+        self._exclusive_prev_plot_enabled = False
 
     def start(self):
         self._stop.clear()
@@ -144,14 +149,100 @@ class NetClient:
 
     def stop(self):
         self._stop.set()
+        with self._exclusive_cv:
+            self._exclusive_cv.notify_all()
         self._close_socket()
 
     def send_hex(self, hex_str: str, tag: str = "MANUAL"):
         b = bytes_from_hex(hex_str)
+        with self._exclusive_cv:
+            if self._exclusive_requested or self._exclusive_active:
+                owner = self._exclusive_owner or "another operation"
+                raise RuntimeError(f"Socket is reserved for {owner}")
         self.send_q.put((b, tag, hex_str.strip()))
 
     def send_bytes(self, b: bytes, tag: str = "MANUAL"):
+        with self._exclusive_cv:
+            if self._exclusive_requested or self._exclusive_active:
+                owner = self._exclusive_owner or "another operation"
+                raise RuntimeError(f"Socket is reserved for {owner}")
         self.send_q.put((b, tag, hex_dump_spaces(b)))
+
+    def acquire_exclusive_socket(self, owner: str, timeout: float = 10.0) -> socket.socket:
+        deadline = time.monotonic() + max(timeout, 0.1)
+        with self._exclusive_cv:
+            if self._sock is None:
+                raise RuntimeError("Ethernet client is not connected")
+            if self._exclusive_requested or self._exclusive_active:
+                active_owner = self._exclusive_owner or "another operation"
+                raise RuntimeError(f"Socket is already reserved for {active_owner}")
+
+            self._exclusive_requested = True
+            self._exclusive_owner = owner
+            self._exclusive_prev_plot_enabled = self.plot_enabled
+            self.plot_enabled = False
+            self._log_session(
+                f"[{host_ts_full()}] [INFO] Exclusive socket requested by {owner}\n"
+            )
+            self._exclusive_cv.notify_all()
+
+            while True:
+                if self._exclusive_active and self._sock is not None:
+                    self._log_session(
+                        f"[{host_ts_full()}] [INFO] Exclusive socket granted to {owner}\n"
+                    )
+                    return self._sock
+                if self._stop.is_set():
+                    self._exclusive_requested = False
+                    self._exclusive_owner = ""
+                    self.plot_enabled = self._exclusive_prev_plot_enabled
+                    self._exclusive_prev_plot_enabled = False
+                    self._exclusive_cv.notify_all()
+                    raise RuntimeError("Ethernet client stopped while waiting for exclusive access")
+
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self._exclusive_requested = False
+                    self._exclusive_owner = ""
+                    self.plot_enabled = self._exclusive_prev_plot_enabled
+                    self._exclusive_prev_plot_enabled = False
+                    self._exclusive_cv.notify_all()
+                    raise TimeoutError("Timed out waiting for exclusive socket access")
+                self._exclusive_cv.wait(timeout=min(0.2, remaining))
+
+    def release_exclusive_socket(self, owner: str):
+        with self._exclusive_cv:
+            if not self._exclusive_requested and not self._exclusive_active:
+                return
+            if self._exclusive_owner and owner != self._exclusive_owner:
+                raise RuntimeError(
+                    f"Socket is reserved for {self._exclusive_owner}, not {owner}"
+                )
+
+            self._log_session(
+                f"[{host_ts_full()}] [INFO] Exclusive socket released by {owner}\n"
+            )
+            self._exclusive_requested = False
+            self._exclusive_active = False
+            self._exclusive_owner = ""
+            self.plot_enabled = self._exclusive_prev_plot_enabled
+            self._exclusive_prev_plot_enabled = False
+            self._waiting = False
+            self._retry_count = 0
+            self._inflight_payload = b""
+            self._inflight_hex = ""
+            self._inflight_tag = "AUTO"
+            self._inflight_kind = "GET"
+            self._try_deadline = 0.0
+            self._next_cps_poll = time.monotonic() + CPS_POLL_INTERVAL_SEC
+            sock = self._sock
+            self._exclusive_cv.notify_all()
+
+        if sock is not None:
+            try:
+                sock.settimeout(0.1)
+            except Exception:
+                pass
 
     # ---------------- internal helpers ----------------
     def _emit_tx(self, hexs: str, tag: str):
@@ -350,6 +441,21 @@ class NetClient:
 
             while not self._stop.is_set():
                 assert sock is not None
+
+                with self._exclusive_cv:
+                    if (
+                        self._exclusive_requested
+                        and not self._exclusive_active
+                        and not self._waiting
+                        and self.send_q.empty()
+                    ):
+                        self._exclusive_active = True
+                        self._exclusive_cv.notify_all()
+                    exclusive_active = self._exclusive_active
+
+                if exclusive_active:
+                    time.sleep(LOOP_SLEEP_SEC)
+                    continue
 
                 # 1) RX pump (non-blocking, short timeout)
                 try:

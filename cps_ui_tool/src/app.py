@@ -23,6 +23,21 @@ from esp_flasher import (
     DEFAULT_FLASH_BAUD,
     format_fw_update_plan,
 )
+from cps_fw_updater import (
+    CpsFwUpdater,
+    CpsUpdateReply,
+    CpsStepContext,
+    DEFAULT_CHUNK_SIZE as CPS_DEFAULT_CHUNK_SIZE,
+    SUPPORTED_CHUNK_SIZES as CPS_CHUNK_SIZES,
+    abort_session as cps_abort_session,
+    abort_session_on_socket,
+    image_name as cps_image_name,
+    query_status as cps_query_status,
+    query_status_on_socket,
+    result_name as cps_result_name,
+    stage_name as cps_stage_name,
+    state_name as cps_state_name,
+)
 from project_paths import LOGS_DIR, ensure_dir, resource_path
 
 
@@ -38,6 +53,16 @@ _C_TEXT_DIM  = "#4A4A4A"   # dimmed text
 
 
 PORT_DEFAULT = 5002
+
+CPS_API_PORT_DEFAULT = PORT_DEFAULT
+_CPS_BOOT_HEX_DEFAULT = (
+    r"D:\V_QI\CPS\FW_Donwload\03_CPS4041_Bootloader\CPS4041_BL_V0.1.hex"
+)
+_CPS_APP_HEX_DEFAULT = (
+    r"D:\V_QI\CPS\CPS_FW_Releases\V1.0_release_for_sync_rectifier\01_Firmware\CPS4041_00_00_V1.0_CRCF566.hex"
+)
+CPS_BOOT_HEX_DEFAULT = _CPS_BOOT_HEX_DEFAULT if os.path.isfile(_CPS_BOOT_HEX_DEFAULT) else ""
+CPS_APP_HEX_DEFAULT = _CPS_APP_HEX_DEFAULT if os.path.isfile(_CPS_APP_HEX_DEFAULT) else ""
 
 # --------------- Register database (from regset.txt) ---------------
 REGISTERS: list[tuple[str, int, int]] = [
@@ -614,6 +639,11 @@ class App(tk.Tk):
         self.tab_fw = ttk.Frame(nb)
         nb.add(self.tab_fw, text="FW Update")
         self._build_fw_tab()
+
+        # ---------------- CPS FW Update tab ----------------
+        self.tab_cps_fw = ttk.Frame(nb)
+        nb.add(self.tab_cps_fw, text="CPS FW upd")
+        self._build_cps_fw_tab()
 
         # UI loop
         self.after(50, self.process_ui_queue)
@@ -1827,6 +1857,706 @@ class App(tk.Tk):
                 self._fw_btn_flash.configure(state=tk.NORMAL)
                 self._fw_btn_cancel.configure(state=tk.DISABLED)
             self.after(0, _restore)
+
+    def _build_cps_fw_tab(self):
+        self._cpsfw_boot_path = tk.StringVar(value=CPS_BOOT_HEX_DEFAULT)
+        self._cpsfw_app_path = tk.StringVar(value=CPS_APP_HEX_DEFAULT)
+        self._cpsfw_port_var = tk.StringVar(value=str(CPS_API_PORT_DEFAULT))
+        self._cpsfw_chunk_var = tk.StringVar(value=str(CPS_DEFAULT_CHUNK_SIZE))
+        self._cpsfw_timeout_var = tk.StringVar(value="3.0")
+        self._cpsfw_step_mode = tk.BooleanVar(value=False)
+        self._cpsfw_progress_var = tk.DoubleVar(value=0.0)
+        self._cpsfw_boot_progress_var = tk.DoubleVar(value=0.0)
+        self._cpsfw_app_progress_var = tk.DoubleVar(value=0.0)
+        self._cpsfw_status_var = tk.StringVar(value="Idle")
+        self._cpsfw_reply_var = tk.StringVar(value="No session")
+        self._cpsfw_result_var = tk.StringVar(value="-")
+        self._cpsfw_state_var = tk.StringVar(value="-")
+        self._cpsfw_image_var = tk.StringVar(value="-")
+        self._cpsfw_stage_var = tk.StringVar(value="-")
+        self._cpsfw_ready_var = tk.StringVar(value="-")
+        self._cpsfw_hal_var = tk.StringVar(value="-")
+        self._cpsfw_cps_status_var = tk.StringVar(value="-")
+        self._cpsfw_chip_var = tk.StringVar(value="-")
+        self._cpsfw_boot_hex_var = tk.StringVar(value="0 / 0")
+        self._cpsfw_boot_written_var = tk.StringVar(value="0")
+        self._cpsfw_app_hex_var = tk.StringVar(value="0 / 0")
+        self._cpsfw_programmed_var = tk.StringVar(value="0")
+        self._cpsfw_cancel_event: threading.Event | None = None
+        self._cpsfw_step_gate: threading.Event | None = None
+        self._cpsfw_thread: threading.Thread | None = None
+        self._cpsfw_updater: CpsFwUpdater | None = None
+        self._cpsfw_using_shared_socket = False
+        self._cpsfw_busy_mode = ""
+        self._cpsfw_log_file = ""
+        self._cpsfw_log_lock = threading.Lock()
+        self._cpsfw_pending_step = CpsStepContext(label="No pending command", detail="")
+        self._cpsfw_step_popup_open = False
+
+        info = ttk.LabelFrame(self.tab_cps_fw, text="Session Notes")
+        info.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(8, 4))
+        ttk.Label(
+            info,
+            text=(
+                "This tab streams raw Intel HEX text to STM with the BEGIN / DATA / END_IMAGE / EXECUTE API. "
+                "If the top-bar Ethernet session is already connected, the CPS FW updater temporarily takes "
+                "exclusive control of that NetClient socket, pauses polling/manual traffic, and then returns "
+                "the socket after the operation finishes. If Ethernet is not connected, the tab falls back to "
+                "its own temporary TCP session."
+            ),
+            wraplength=980,
+            justify=tk.LEFT,
+        ).pack(fill=tk.X, padx=8, pady=8)
+
+        files_lf = ttk.LabelFrame(self.tab_cps_fw, text="HEX Files")
+        files_lf.pack(side=tk.TOP, fill=tk.X, padx=10, pady=4)
+        files_lf.columnconfigure(1, weight=1)
+
+        ttk.Label(files_lf, text="Bootloader HEX:").grid(row=0, column=0, padx=8, pady=8, sticky=tk.W)
+        ttk.Entry(files_lf, textvariable=self._cpsfw_boot_path).grid(
+            row=0, column=1, padx=6, pady=8, sticky=tk.EW
+        )
+        ttk.Button(files_lf, text="Browse...", command=self._cpsfw_browse_boot).grid(
+            row=0, column=2, padx=8, pady=8
+        )
+
+        ttk.Label(files_lf, text="Application HEX:").grid(row=1, column=0, padx=8, pady=8, sticky=tk.W)
+        ttk.Entry(files_lf, textvariable=self._cpsfw_app_path).grid(
+            row=1, column=1, padx=6, pady=8, sticky=tk.EW
+        )
+        ttk.Button(files_lf, text="Browse...", command=self._cpsfw_browse_app).grid(
+            row=1, column=2, padx=8, pady=8
+        )
+
+        cfg_lf = ttk.LabelFrame(self.tab_cps_fw, text="API Transport")
+        cfg_lf.pack(side=tk.TOP, fill=tk.X, padx=10, pady=4)
+
+        row = ttk.Frame(cfg_lf)
+        row.pack(fill=tk.X, padx=8, pady=(8, 4))
+
+        ttk.Label(row, text="Target IP:").pack(side=tk.LEFT)
+        ttk.Label(row, textvariable=self.ip_var).pack(side=tk.LEFT, padx=(4, 16))
+
+        ttk.Label(row, text="API Port:").pack(side=tk.LEFT)
+        ttk.Entry(row, textvariable=self._cpsfw_port_var, width=8).pack(side=tk.LEFT, padx=(4, 16))
+
+        ttk.Label(row, text="Chunk size:").pack(side=tk.LEFT)
+        ttk.Combobox(
+            row,
+            textvariable=self._cpsfw_chunk_var,
+            values=[str(v) for v in CPS_CHUNK_SIZES],
+            state="readonly",
+            width=6,
+        ).pack(side=tk.LEFT, padx=(4, 16))
+
+        ttk.Label(row, text="Cmd timeout (s):").pack(side=tk.LEFT)
+        ttk.Entry(row, textvariable=self._cpsfw_timeout_var, width=8).pack(side=tk.LEFT, padx=(4, 8))
+
+        row2 = ttk.Frame(cfg_lf)
+        row2.pack(fill=tk.X, padx=8, pady=(0, 8))
+        self._cpsfw_step_chk = ttk.Checkbutton(
+            row2,
+            text="Ask before each CPS FW command/chunk",
+            variable=self._cpsfw_step_mode,
+        )
+        self._cpsfw_step_chk.pack(side=tk.LEFT)
+        ttk.Label(
+            row2,
+            text="Popup options: Send this chunk, Send all, or Cancel.",
+        ).pack(side=tk.LEFT, padx=(12, 0))
+
+        btn_row = ttk.Frame(self.tab_cps_fw)
+        btn_row.pack(side=tk.TOP, fill=tk.X, padx=10, pady=4)
+
+        self._cpsfw_btn_start = ttk.Button(btn_row, text="Start Update", command=self._cpsfw_start)
+        self._cpsfw_btn_start.pack(side=tk.LEFT, padx=(0, 8))
+
+        self._cpsfw_btn_status = ttk.Button(btn_row, text="Query Status", command=self._cpsfw_query_status)
+        self._cpsfw_btn_status.pack(side=tk.LEFT, padx=(0, 8))
+
+        self._cpsfw_btn_abort = ttk.Button(btn_row, text="Abort Remote", command=self._cpsfw_abort_remote)
+        self._cpsfw_btn_abort.pack(side=tk.LEFT, padx=(0, 16))
+
+        self._cpsfw_btn_cancel = ttk.Button(
+            btn_row, text="Cancel Active Update", command=self._cpsfw_cancel, state=tk.DISABLED
+        )
+        self._cpsfw_btn_cancel.pack(side=tk.LEFT, padx=(0, 16))
+
+        ttk.Label(btn_row, textvariable=self._cpsfw_status_var).pack(side=tk.LEFT)
+
+        status_lf = ttk.LabelFrame(self.tab_cps_fw, text="Progress")
+        status_lf.pack(side=tk.TOP, fill=tk.X, padx=10, pady=4)
+
+        self._cpsfw_progressbar = ttk.Progressbar(
+            status_lf, variable=self._cpsfw_progress_var, maximum=1.0, mode="determinate"
+        )
+        self._cpsfw_progressbar.pack(fill=tk.X, padx=8, pady=(8, 4))
+
+        ttk.Label(status_lf, textvariable=self._cpsfw_reply_var, wraplength=980, justify=tk.LEFT).pack(
+            fill=tk.X, padx=8, pady=(0, 8)
+        )
+
+        detail_lf = ttk.LabelFrame(self.tab_cps_fw, text="CPS Progress Panel")
+        detail_lf.pack(side=tk.TOP, fill=tk.X, padx=10, pady=4)
+        for col in range(4):
+            detail_lf.columnconfigure(col * 2 + 1, weight=1)
+
+        ttk.Label(detail_lf, text="Result:").grid(row=0, column=0, padx=8, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_result_var).grid(row=0, column=1, padx=4, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, text="State:").grid(row=0, column=2, padx=8, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_state_var).grid(row=0, column=3, padx=4, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, text="Stage:").grid(row=0, column=4, padx=8, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_stage_var).grid(row=0, column=5, padx=4, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, text="Image:").grid(row=0, column=6, padx=8, pady=(8, 4), sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_image_var).grid(row=0, column=7, padx=4, pady=(8, 4), sticky=tk.W)
+
+        ttk.Label(detail_lf, text="Ready mask:").grid(row=1, column=0, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_ready_var).grid(row=1, column=1, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="HAL status:").grid(row=1, column=2, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_hal_var).grid(row=1, column=3, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="CPS status:").grid(row=1, column=4, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_cps_status_var).grid(row=1, column=5, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="Chip ID:").grid(row=1, column=6, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_chip_var).grid(row=1, column=7, padx=4, pady=4, sticky=tk.W)
+
+        ttk.Label(detail_lf, text="Boot HEX RX:").grid(row=2, column=0, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_boot_hex_var).grid(row=2, column=1, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="Boot bytes written:").grid(row=2, column=2, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_boot_written_var).grid(row=2, column=3, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="App HEX RX:").grid(row=2, column=4, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_app_hex_var).grid(row=2, column=5, padx=4, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, text="Programmed bytes:").grid(row=2, column=6, padx=8, pady=4, sticky=tk.W)
+        ttk.Label(detail_lf, textvariable=self._cpsfw_programmed_var).grid(row=2, column=7, padx=4, pady=4, sticky=tk.W)
+
+        ttk.Label(detail_lf, text="Boot RX progress:").grid(row=3, column=0, padx=8, pady=(6, 4), sticky=tk.W)
+        ttk.Progressbar(
+            detail_lf,
+            variable=self._cpsfw_boot_progress_var,
+            maximum=1.0,
+            mode="determinate",
+        ).grid(row=3, column=1, columnspan=7, padx=4, pady=(6, 4), sticky=tk.EW)
+
+        ttk.Label(detail_lf, text="App RX progress:").grid(row=4, column=0, padx=8, pady=(4, 8), sticky=tk.W)
+        ttk.Progressbar(
+            detail_lf,
+            variable=self._cpsfw_app_progress_var,
+            maximum=1.0,
+            mode="determinate",
+        ).grid(row=4, column=1, columnspan=7, padx=4, pady=(4, 8), sticky=tk.EW)
+
+        log_lf = ttk.LabelFrame(self.tab_cps_fw, text="CPS FW Update Log")
+        log_lf.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=(4, 8))
+
+        self._cpsfw_log_text = tk.Text(
+            log_lf,
+            height=18,
+            wrap=tk.WORD,
+            bg=_C_WHITE,
+            fg=_C_TEXT,
+            insertbackground=_C_TEXT,
+            selectbackground=_C_BLUE,
+            selectforeground=_C_WHITE,
+            font=("Consolas", 9),
+        )
+        scroll = ttk.Scrollbar(log_lf, orient=tk.VERTICAL, command=self._cpsfw_log_text.yview)
+        self._cpsfw_log_text.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._cpsfw_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self._cpsfw_reset_status_panel()
+
+    def _cpsfw_browse_boot(self):
+        path = filedialog.askopenfilename(
+            title="Select CPS bootloader HEX",
+            filetypes=[("Intel HEX", "*.hex"), ("All files", "*.*")],
+        )
+        if path:
+            self._cpsfw_boot_path.set(path)
+
+    def _cpsfw_browse_app(self):
+        path = filedialog.askopenfilename(
+            title="Select CPS application HEX",
+            filetypes=[("Intel HEX", "*.hex"), ("All files", "*.*")],
+        )
+        if path:
+            self._cpsfw_app_path.set(path)
+
+    @staticmethod
+    def _cpsfw_host_ts_full() -> str:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+    @staticmethod
+    def _cpsfw_ratio(value: int, total: int) -> float:
+        if total <= 0:
+            return 0.0
+        return max(0.0, min(1.0, value / total))
+
+    @staticmethod
+    def _cpsfw_ready_text(mask: int) -> str:
+        flags = []
+        if mask & 0x01:
+            flags.append("BOOT")
+        if mask & 0x02:
+            flags.append("APP")
+        suffix = ", ".join(flags) if flags else "none"
+        return f"0x{mask:02X} ({suffix})"
+
+    def _cpsfw_reset_status_panel(self):
+        self._cpsfw_reply_var.set("No session")
+        self._cpsfw_result_var.set("-")
+        self._cpsfw_state_var.set("-")
+        self._cpsfw_image_var.set("-")
+        self._cpsfw_stage_var.set("-")
+        self._cpsfw_ready_var.set("-")
+        self._cpsfw_hal_var.set("-")
+        self._cpsfw_cps_status_var.set("-")
+        self._cpsfw_chip_var.set("-")
+        self._cpsfw_boot_hex_var.set("0 / 0")
+        self._cpsfw_boot_written_var.set("0")
+        self._cpsfw_app_hex_var.set("0 / 0")
+        self._cpsfw_programmed_var.set("0")
+        self._cpsfw_boot_progress_var.set(0.0)
+        self._cpsfw_app_progress_var.set(0.0)
+
+    def _cpsfw_make_log_path(self) -> str:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        return os.path.join(LOG_DIR, "cps_fw_update", f"cps_fw_update_{stamp}.log")
+
+    def _cpsfw_write_file(self, text: str):
+        if not self._cpsfw_log_file:
+            return
+        try:
+            os.makedirs(os.path.dirname(self._cpsfw_log_file), exist_ok=True)
+            append_text(self._cpsfw_log_lock, self._cpsfw_log_file, text)
+        except Exception:
+            pass
+
+    def _cpsfw_log(self, msg: str):
+        ts = self._cpsfw_host_ts_full()
+        self._cpsfw_write_file(f"[{ts}] {msg}\n")
+
+        def _append():
+            self._cpsfw_log_text.insert("end", msg + "\n")
+            self._cpsfw_log_text.see("end")
+
+        self.after(0, _append)
+
+    def _cpsfw_set_progress(self, pct: float, status: str):
+        def _update():
+            self._cpsfw_progress_var.set(pct)
+            self._cpsfw_status_var.set(status)
+
+        self.after(0, _update)
+
+    def _cpsfw_set_pending_step(self, context: CpsStepContext):
+        self._cpsfw_pending_step = context
+        self._cpsfw_status_var.set(f"Waiting for approval: {context.label}")
+
+    def _cpsfw_set_reply(self, reply: CpsUpdateReply):
+        self._cpsfw_reply_var.set(reply.summary())
+        self._cpsfw_result_var.set(cps_result_name(reply.op_result))
+        self._cpsfw_state_var.set(cps_state_name(reply.session_state))
+        self._cpsfw_image_var.set(cps_image_name(reply.active_image))
+        self._cpsfw_stage_var.set(cps_stage_name(reply.last_stage))
+        self._cpsfw_ready_var.set(self._cpsfw_ready_text(reply.ready_mask))
+        self._cpsfw_hal_var.set(f"0x{reply.hal_status:02X}")
+        self._cpsfw_cps_status_var.set(f"0x{reply.cps_status:08X}")
+        self._cpsfw_chip_var.set(f"0x{reply.chip_id:04X}")
+        self._cpsfw_boot_hex_var.set(
+            f"{reply.boot_hex_received} / {reply.boot_hex_expected}"
+        )
+        self._cpsfw_boot_written_var.set(str(reply.boot_bytes_written))
+        self._cpsfw_app_hex_var.set(
+            f"{reply.app_hex_received} / {reply.app_hex_expected}"
+        )
+        self._cpsfw_programmed_var.set(str(reply.programmed_bytes))
+        self._cpsfw_boot_progress_var.set(
+            self._cpsfw_ratio(reply.boot_hex_received, reply.boot_hex_expected)
+        )
+        self._cpsfw_app_progress_var.set(
+            self._cpsfw_ratio(reply.app_hex_received, reply.app_hex_expected)
+        )
+
+    def _cpsfw_set_busy(self, busy: bool, mode: str = ""):
+        self._cpsfw_busy_mode = mode if busy else ""
+        self._cpsfw_btn_start.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        self._cpsfw_btn_status.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        self._cpsfw_btn_abort.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        self._cpsfw_btn_cancel.configure(
+            state=tk.NORMAL if (busy and mode == "update") else tk.DISABLED
+        )
+        self._cpsfw_step_chk.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        if hasattr(self, "btn_disconnect"):
+            if busy and self._cpsfw_using_shared_socket:
+                self.btn_disconnect.configure(state=tk.DISABLED)
+            elif isinstance(self.client, NetClient):
+                self.btn_disconnect.configure(state=tk.NORMAL)
+
+    def _cpsfw_connected_net_client(self) -> NetClient | None:
+        if isinstance(self.client, NetClient):
+            return self.client
+        return None
+
+    def _cpsfw_require_transport_ready(self) -> bool:
+        if isinstance(self.client, USBClient):
+            messagebox.showerror(
+                "CPS FW upd",
+                "CPS FW update uses the Ethernet API path. Disconnect USB mode first, or switch the top bar "
+                "back to Ethernet.",
+            )
+            return False
+        if self._cpsfw_thread is not None and self._cpsfw_thread.is_alive():
+            messagebox.showinfo("CPS FW upd", "A CPS FW operation is already running.")
+            return False
+        return True
+
+    def _cpsfw_common_target(self) -> tuple[str, int, float] | None:
+        ip = self.ip_var.get().strip()
+        if not ip:
+            messagebox.showerror("CPS FW upd", "Please enter the target IP address in the top bar.")
+            return None
+
+        try:
+            port = int(self._cpsfw_port_var.get().strip())
+        except ValueError:
+            messagebox.showerror("CPS FW upd", "Invalid API port number.")
+            return None
+
+        try:
+            timeout = float(self._cpsfw_timeout_var.get().strip())
+            if timeout <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("CPS FW upd", "Invalid command timeout. Use a positive value in seconds.")
+            return None
+
+        return ip, port, timeout
+
+    def _cpsfw_start(self):
+        if not self._cpsfw_require_transport_ready():
+            return
+
+        boot_path = self._cpsfw_boot_path.get().strip()
+        app_path = self._cpsfw_app_path.get().strip()
+        if not boot_path or not app_path:
+            messagebox.showerror("CPS FW upd", "Please select both bootloader and application HEX files.")
+            return
+
+        try:
+            with open(boot_path, "rb") as fh:
+                boot_hex = fh.read()
+            with open(app_path, "rb") as fh:
+                app_hex = fh.read()
+        except Exception as exc:
+            messagebox.showerror("CPS FW upd", f"Cannot read HEX files:\n{exc}")
+            return
+
+        if not boot_hex.startswith(b":"):
+            messagebox.showerror("CPS FW upd", "Bootloader file does not look like an Intel HEX file.")
+            return
+        if not app_hex.startswith(b":"):
+            messagebox.showerror("CPS FW upd", "Application file does not look like an Intel HEX file.")
+            return
+
+        try:
+            chunk_size = int(self._cpsfw_chunk_var.get().strip())
+        except ValueError:
+            messagebox.showerror("CPS FW upd", "Invalid chunk size.")
+            return
+        if chunk_size not in CPS_CHUNK_SIZES:
+            messagebox.showerror("CPS FW upd", "Chunk size must be 256 or 512 bytes.")
+            return
+
+        target = self._cpsfw_common_target()
+        if target is None:
+            return
+        ip, port, timeout = target
+        step_mode = self._cpsfw_step_mode.get()
+        shared_client = self._cpsfw_connected_net_client()
+        transport_mode = (
+            "shared top-bar Ethernet socket"
+            if shared_client is not None
+            else "temporary CPS-only socket"
+        )
+
+        msg = (
+            f"Target IP      : {ip}\n"
+            f"API port       : {port}\n"
+            f"Transport      : {transport_mode}\n"
+            f"Boot HEX size  : {len(boot_hex)} bytes\n"
+            f"App HEX size   : {len(app_hex)} bytes\n"
+            f"Chunk size     : {chunk_size} bytes\n"
+            f"Timeout        : {timeout:.1f} s\n"
+            f"Manual pacing  : {'ON' if step_mode else 'OFF'}\n\n"
+            f"Proceed with CPS FW update?"
+        )
+        if not messagebox.askyesno("CPS FW upd", msg):
+            return
+
+        self._cpsfw_log_text.delete("1.0", "end")
+        self._cpsfw_progress_var.set(0.0)
+        self._cpsfw_status_var.set("Preparing update...")
+        self._cpsfw_reset_status_panel()
+        self._cpsfw_log_file = self._cpsfw_make_log_path()
+        self._cpsfw_cancel_event = threading.Event()
+        self._cpsfw_step_gate = threading.Event() if step_mode else None
+        if self._cpsfw_step_gate is not None:
+            self._cpsfw_step_gate.set()
+        self._cpsfw_pending_step = CpsStepContext(label="No pending command", detail="")
+        self._cpsfw_step_popup_open = False
+        self._cpsfw_using_shared_socket = shared_client is not None
+        self._cpsfw_set_busy(True, mode="update")
+
+        self._cpsfw_log("=" * 72)
+        self._cpsfw_log("CPS FW update requested")
+        self._cpsfw_log(f"Boot HEX : {boot_path}")
+        self._cpsfw_log(f"App HEX  : {app_path}")
+        self._cpsfw_log(f"Target   : {ip}:{port}")
+        self._cpsfw_log(f"Transport: {transport_mode}")
+        self._cpsfw_log(f"Chunk    : {chunk_size}")
+        self._cpsfw_log(f"Timeout  : {timeout:.1f} s")
+        self._cpsfw_log(f"Step mode: {'ON' if step_mode else 'OFF'}")
+        self._cpsfw_log(f"Trace    : {self._cpsfw_log_file}")
+        self._cpsfw_log("=" * 72)
+
+        self._cpsfw_thread = threading.Thread(
+            target=self._cpsfw_worker,
+            args=(shared_client, ip, port, boot_hex, app_hex, chunk_size, timeout),
+            daemon=True,
+        )
+        self._cpsfw_thread.start()
+        if step_mode:
+            self.after(200, self._cpsfw_poll_step_gate)
+
+    def _cpsfw_cancel(self):
+        if self._cpsfw_cancel_event is not None:
+            self._cpsfw_cancel_event.set()
+            self._cpsfw_status_var.set("Cancelling CPS FW update...")
+        if self._cpsfw_step_gate is not None:
+            self._cpsfw_step_gate.set()
+
+    def _cpsfw_done(self, ok: bool, message: str):
+        mode = self._cpsfw_busy_mode
+        self._cpsfw_thread = None
+        self._cpsfw_cancel_event = None
+        self._cpsfw_step_gate = None
+        self._cpsfw_updater = None
+        self._cpsfw_using_shared_socket = False
+        self._cpsfw_pending_step = CpsStepContext(label="No pending command", detail="")
+        self._cpsfw_step_popup_open = False
+        self._cpsfw_set_busy(False)
+        self._cpsfw_status_var.set(message)
+        if ok and mode == "update":
+            self._cpsfw_progress_var.set(1.0)
+
+    def _cpsfw_poll_step_gate(self):
+        gate = self._cpsfw_step_gate
+        if gate is None:
+            return
+        if self._cpsfw_thread is None or not self._cpsfw_thread.is_alive():
+            return
+        if not gate.is_set():
+            if not self._cpsfw_step_popup_open:
+                self._cpsfw_show_step_popup()
+            return
+        self.after(100, self._cpsfw_poll_step_gate)
+
+    def _cpsfw_show_step_popup(self):
+        gate = self._cpsfw_step_gate
+        if gate is None or self._cpsfw_step_popup_open:
+            return
+
+        self._cpsfw_step_popup_open = True
+        ctx = self._cpsfw_pending_step
+
+        dlg = tk.Toplevel(self)
+        dlg.title("CPS FW upd - Step Control")
+        dlg.geometry("560x360")
+        dlg.resizable(True, True)
+        dlg.transient(self)
+        dlg.grab_set()
+
+        ttk.Label(
+            dlg,
+            text="Approve the next CPS FW command/chunk",
+            font=("Segoe UI", 10, "bold"),
+        ).pack(padx=12, pady=(12, 4), anchor="w")
+        ttk.Label(
+            dlg,
+            text=ctx.label,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(padx=12, pady=(0, 4), anchor="w")
+        ttk.Label(
+            dlg,
+            text=ctx.detail or "No detail available.",
+            wraplength=520,
+            justify=tk.LEFT,
+        ).pack(padx=12, pady=(0, 6), anchor="w")
+
+        log_text = tk.Text(dlg, height=11, wrap=tk.WORD, font=("Consolas", 8))
+        log_text.pack(fill=tk.BOTH, expand=True, padx=12, pady=4)
+        all_log = self._cpsfw_log_text.get("1.0", "end").strip()
+        lines = all_log.split("\n") if all_log else []
+        recent = "\n".join(lines[-30:]) if len(lines) > 30 else all_log
+        log_text.insert("1.0", recent)
+        log_text.see("end")
+        log_text.configure(state=tk.DISABLED)
+
+        btn_frame = ttk.Frame(dlg)
+        btn_frame.pack(fill=tk.X, padx=12, pady=(4, 12))
+
+        def _close_popup():
+            self._cpsfw_step_popup_open = False
+            try:
+                dlg.destroy()
+            except Exception:
+                pass
+
+        def _send_this():
+            _close_popup()
+            gate.set()
+            self.after(100, self._cpsfw_poll_step_gate)
+
+        def _send_all():
+            _close_popup()
+            if self._cpsfw_updater is not None:
+                self._cpsfw_updater.auto_mode = True
+            gate.set()
+            self._cpsfw_status_var.set("Manual pacing disabled for the rest of this session.")
+            self.after(100, self._cpsfw_poll_step_gate)
+
+        def _cancel_update():
+            _close_popup()
+            self._cpsfw_cancel()
+
+        ttk.Button(btn_frame, text="Send this chunk", command=_send_this).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        ttk.Button(btn_frame, text="Send all", command=_send_all).pack(
+            side=tk.LEFT, padx=(0, 8)
+        )
+        ttk.Button(btn_frame, text="Cancel update", command=_cancel_update).pack(
+            side=tk.RIGHT
+        )
+
+        dlg.protocol("WM_DELETE_WINDOW", _cancel_update)
+
+    def _cpsfw_worker(self, shared_client: NetClient | None, ip: str, port: int, boot_hex: bytes,
+                      app_hex: bytes, chunk_size: int, timeout: float):
+        owner = "CPS FW update"
+        shared_sock = None
+        try:
+            if shared_client is not None:
+                self._cpsfw_log("Requesting exclusive access to the connected Ethernet socket...")
+                shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=10.0)
+                self._cpsfw_log("Exclusive socket granted. Polling/manual traffic is paused for CPS FW update.")
+
+            updater = CpsFwUpdater(
+                ip=ip,
+                port=port,
+                bootloader_hex=boot_hex,
+                app_hex=app_hex,
+                chunk_size=chunk_size,
+                on_log=self._cpsfw_log,
+                on_progress=self._cpsfw_set_progress,
+                on_done=lambda ok, msg: self.after(0, lambda: self._cpsfw_done(ok, msg)),
+                cancel_event=self._cpsfw_cancel_event or threading.Event(),
+                cmd_timeout=timeout,
+                on_reply=lambda reply: self.after(0, lambda: self._cpsfw_set_reply(reply)),
+                step_gate=self._cpsfw_step_gate,
+                on_step_pause=lambda ctx: self.after(0, lambda ctx=ctx: self._cpsfw_set_pending_step(ctx)),
+                sock=shared_sock,
+            )
+            self._cpsfw_updater = updater
+            updater.run()
+        finally:
+            if shared_client is not None:
+                try:
+                    shared_client.release_exclusive_socket(owner)
+                    self._cpsfw_log("Exclusive Ethernet socket returned to the main client.")
+                except Exception as exc:
+                    self._cpsfw_log(f"[WARN] Failed to release shared socket cleanly: {exc}")
+
+    def _cpsfw_query_status(self):
+        if not self._cpsfw_require_transport_ready():
+            return
+
+        target = self._cpsfw_common_target()
+        if target is None:
+            return
+        ip, port, timeout = target
+        shared_client = self._cpsfw_connected_net_client()
+
+        self._cpsfw_set_busy(True, mode="status")
+        self._cpsfw_status_var.set("Querying CPS FW status...")
+        self._cpsfw_thread = threading.Thread(
+            target=self._cpsfw_query_worker,
+            args=(shared_client, ip, port, timeout),
+            daemon=True,
+        )
+        self._cpsfw_thread.start()
+
+    def _cpsfw_query_worker(self, shared_client: NetClient | None, ip: str, port: int, timeout: float):
+        owner = "CPS FW status"
+        try:
+            if shared_client is not None:
+                self._cpsfw_log("Borrowing the connected Ethernet socket for STATUS query...")
+                shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=5.0)
+                try:
+                    reply = query_status_on_socket(shared_sock, timeout, log=self._cpsfw_log)
+                finally:
+                    shared_client.release_exclusive_socket(owner)
+            else:
+                reply = cps_query_status(ip, port, timeout, log=self._cpsfw_log)
+            self.after(0, lambda: self._cpsfw_set_reply(reply))
+            self.after(0, lambda: self._cpsfw_done(True, "CPS FW status received."))
+        except Exception as exc:
+            msg = f"Status query failed: {exc}"
+            self._cpsfw_log(f"[ERROR] {type(exc).__name__}: {exc}")
+            self.after(0, lambda: self._cpsfw_done(False, msg))
+
+    def _cpsfw_abort_remote(self):
+        if not self._cpsfw_require_transport_ready():
+            return
+
+        target = self._cpsfw_common_target()
+        if target is None:
+            return
+        ip, port, timeout = target
+        shared_client = self._cpsfw_connected_net_client()
+
+        if not messagebox.askyesno(
+            "CPS FW upd",
+            f"Send ABORT to {ip}:{port} and ask STM to cancel the active CPS FW session?",
+        ):
+            return
+
+        self._cpsfw_set_busy(True, mode="abort")
+        self._cpsfw_status_var.set("Sending remote abort...")
+        self._cpsfw_thread = threading.Thread(
+            target=self._cpsfw_abort_worker,
+            args=(shared_client, ip, port, timeout),
+            daemon=True,
+        )
+        self._cpsfw_thread.start()
+
+    def _cpsfw_abort_worker(self, shared_client: NetClient | None, ip: str, port: int, timeout: float):
+        owner = "CPS FW abort"
+        try:
+            if shared_client is not None:
+                self._cpsfw_log("Borrowing the connected Ethernet socket for ABORT...")
+                shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=5.0)
+                try:
+                    reply = abort_session_on_socket(shared_sock, timeout, log=self._cpsfw_log)
+                finally:
+                    shared_client.release_exclusive_socket(owner)
+            else:
+                reply = cps_abort_session(ip, port, timeout, log=self._cpsfw_log)
+            self.after(0, lambda: self._cpsfw_set_reply(reply))
+            self.after(0, lambda: self._cpsfw_done(True, "Remote abort command sent."))
+        except Exception as exc:
+            msg = f"Abort failed: {exc}"
+            self._cpsfw_log(f"[ERROR] {type(exc).__name__}: {exc}")
+            self.after(0, lambda: self._cpsfw_done(False, msg))
 
     def _build_reg_tab(self):
         # --- Register selector ---

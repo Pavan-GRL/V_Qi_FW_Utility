@@ -1,0 +1,872 @@
+= CPS FW Update PC Integration Guide
+:toc: left
+:toclevels: 4
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:last-update-label!:
+Document Version: 1.0 +
+Last Updated: 2026-04-27
+
+== Purpose
+
+This document describes the PC-side integration flow for CPS4041 firmware update over TCP through STM32.
+
+It is written for software teams implementing the host utility side and covers:
+
+* how to read and send bootloader/app HEX files
+* how to frame CPS FW update commands over TCP port `5002`
+* how to decode the STM response trailer
+* how to decide what to do next based on STM response fields
+* how to handle retries, aborts, and completion
+
+The decode described here is based on the STM firmware source, not on guesswork from logs:
+
+* Response packing in `CM7/Core/Src/cm7_qi_app.c`
+* Session/status enums in `CM7/Core/Inc/cps_fw_stream.h`
+* Update stage enums in `CM7/Core/Inc/cps_fw_update.h`
+
+The PC utility mirrors the same layout in `src/cps_fw_updater.py`.
+
+== PC-Side Responsibilities
+
+The PC host is responsible for:
+
+* opening a TCP connection to the STM API port
+* reading the bootloader HEX file as raw bytes
+* reading the application HEX file as raw bytes
+* sending the HEX file contents in file order as ASCII bytes
+* chunking the raw HEX file into `256` or `512` byte payloads
+* waiting for one STM response per transmitted API frame
+* decoding the last 40 bytes of each STM response
+* deciding whether to continue, retry, abort, or report success
+
+Important:
+
+* The PC should send the HEX file as raw file bytes, not as parsed binary image bytes.
+* The PC should not reorder records or normalize file contents before sending.
+* The `offset` field in each `DATA` frame is the byte offset in the original HEX file stream.
+
+== Request Frame Format
+
+All CPS FW update requests use the standard API frame:
+
+[source]
+----
+byte[0]   = 0x02                     // PGM_CMD
+byte[1:2] = total_length_le
+byte[3:4] = host sequence / token
+byte[5]   = 0xB1                     // FW_UPDATE
+byte[6]   = 0x00                     // reserved
+byte[7]   = operation
+byte[8]   = 0x03                     // QI_UNIT
+byte[9..] = operation payload
+----
+
+The current STM handler does not use `byte[3:4]` for protocol decisions. The PC may use it as a host sequence/token. The current utility uses an incrementing 16-bit value starting from `1`.
+
+=== Operation Codes
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x01`
+|`BEGIN`
+
+|`0x02`
+|`DATA`
+
+|`0x03`
+|`END_IMAGE`
+
+|`0x04`
+|`EXECUTE`
+
+|`0x05`
+|`ABORT`
+
+|`0x06`
+|`STATUS`
+|===
+
+=== Image Type Values
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x00`
+|None
+
+|`0x01`
+|Bootloader image
+
+|`0x02`
+|Application image
+|===
+
+=== Operation Payloads
+
+[cols="1,2,4", options="header"]
+|===
+|Operation |Payload bytes |Meaning
+
+|`BEGIN`
+|`byte[9] = image_type`
+`byte[10:13] = expected_hex_file_size_le`
+|Starts boot or app receive session
+
+|`DATA`
+|`byte[9] = image_type`
+`byte[10:13] = file_offset_le`
+`byte[14:15] = chunk_length_le`
+`byte[16..] = raw HEX ASCII bytes`
+|Pushes the next piece of the HEX file
+
+|`END_IMAGE`
+|`byte[9] = image_type`
+`byte[10:13] = expected_hex_file_size_le`
+|Closes boot or app image stream
+
+|`EXECUTE`
+|No extra payload
+|Runs app verify, reset, and chip-ID check
+
+|`ABORT`
+|No extra payload
+|Cancels current CPS FW session inside STM
+
+|`STATUS`
+|No extra payload
+|Returns current CPS FW status trailer without changing session
+|===
+
+== Host File Handling
+
+=== What To Read From Disk
+
+Open both files in binary mode and keep the original byte stream:
+
+* `bootloader.hex` -> raw ASCII HEX file bytes
+* `firmware.hex` -> raw ASCII HEX file bytes
+
+Do not:
+
+* convert HEX to binary on the PC side for this protocol
+* strip line endings
+* re-wrap lines
+* insert extra separators
+
+The STM parser handles the incoming Intel HEX stream progressively.
+
+=== Chunking Rule
+
+The current implementation supports:
+
+* `256` byte payload chunks
+* `512` byte payload chunks
+
+Chunk size applies to the raw HEX file byte stream, not to decoded firmware bytes.
+
+=== Offset Rule
+
+For each `DATA` command:
+
+* `offset = 0` for first chunk
+* `offset += previous_chunk_length` for each next chunk
+* offset must be monotonic and must match file position in the original HEX file
+
+== Recommended Host Flow
+
+The recommended host state machine is:
+
+1. Connect TCP socket to STM API port `5002`
+2. Send `BEGIN` for bootloader
+3. Send bootloader `DATA` chunks in file order
+4. Send `END_IMAGE` for bootloader
+5. Send `BEGIN` for app
+6. Send application `DATA` chunks in file order
+7. Send `END_IMAGE` for app
+8. Send `EXECUTE`
+9. Optionally send `STATUS`
+10. Close socket or return to normal application flow
+
+=== Recommended Decision After Each TX
+
+For every transmitted frame:
+
+1. Send exactly one request frame
+2. Wait for exactly one response frame
+3. Decode the response trailer
+4. If `op_result != OK`, stop normal flow and handle error
+5. If `op_result == OK`, validate that returned `session_state`, `active_image`, and counters are consistent with the phase you are in
+6. Only then send the next frame
+
+== TCP Transport Rules
+
+=== Socket Behavior
+
+Recommended PC behavior:
+
+* one TCP connection for the full update session when possible
+* one request in flight at a time
+* wait for full API response before sending next request
+* do not pipeline multiple CPS FW update frames
+
+=== Retry Recommendation
+
+Recommended host retry policy:
+
+* timeout per request: about `3.0 s`
+* retry count: `3`
+* on timeout or incomplete response: resend the same frame
+* if all retries fail: abort session and report communication failure
+
+For `BEGIN`, `DATA`, `END_IMAGE`, and `EXECUTE`, a resend should reuse the same frame contents.
+
+=== STATUS And ABORT
+
+`STATUS` is safe to use when:
+
+* UI wants a snapshot of current STM-side session state
+* host needs extra diagnostics after a failure
+
+`ABORT` is recommended when:
+
+* retries are exhausted
+* user cancels the operation
+* the host detects a non-recoverable protocol or programming error
+
+== Example Request Frames
+
+=== `BEGIN_BOOT`
+
+[source]
+----
+02 0E 00 01 00 B1 00 01 03 01 B3 16 00 00
+----
+
+Meaning:
+
+* op = `0x01` -> `BEGIN`
+* unit = `0x03`
+* image_type = `0x01` -> bootloader
+* expected size = `0x000016B3` -> `5811` bytes
+
+=== `BOOT_DATA` Chunk 1, 256 Bytes
+
+[source]
+----
+02 10 01 02 00 B1 00 02 03 01 00 00 00 00 00 01 <256 HEX file bytes>
+----
+
+Meaning:
+
+* total frame length = `0x0110` -> `272`
+* op = `0x02` -> `DATA`
+* image_type = `0x01` -> bootloader
+* offset = `0`
+* chunk length = `256`
+
+=== `BEGIN_APP`
+
+[source]
+----
+02 0E 00 1A 00 B1 00 01 03 02 33 68 01 00
+----
+
+Meaning:
+
+* op = `0x01` -> `BEGIN`
+* image_type = `0x02` -> app
+* expected size = `0x00016833` -> `92211` bytes
+
+== Response Frame Format
+
+The STM response is:
+
+* a partial echo of the original request
+* followed by a fixed 40-byte status trailer
+
+Important behavior from STM source:
+
+* Only the first `min(request_length, 16)` bytes of the request are retained in the response body.
+* The response length field `byte[1:2]` is overwritten with the response total length.
+* Therefore, the response is not a byte-for-byte copy of the request.
+
+=== Echo Length Rule
+
+[cols="1,3", options="header"]
+|===
+|Request type |Echoed bytes in response
+
+|Short requests like `BEGIN`, `END_IMAGE`
+|Full request is echoed because request length is 14 bytes
+
+|Long requests like `DATA`
+|Only first 16 bytes are echoed, which includes header + image type + offset + chunk length, but not chunk payload
+|===
+
+=== Response Total Length
+
+[cols="1,3", options="header"]
+|===
+|Case |Response length
+
+|Request length `<= 16`
+|`request_length + 40`
+
+|Request length `> 16`
+|`16 + 40 = 56`
+|===
+
+Examples:
+
+* `BEGIN_BOOT` request length = `14` -> response length = `54` (`0x0036`)
+* `DATA` request length = `272` -> response length = `56` (`0x0038`)
+
+== 40-Byte Status Trailer Layout
+
+The host parser should decode the *last 40 bytes* of the response frame.
+
+[cols="1,1,2,4", options="header"]
+|===
+|Trailer Offset |Size |Type |Field
+
+|`0`
+|1
+|`u8`
+|`op_result`
+
+|`1`
+|1
+|`u8`
+|`session_state`
+
+|`2`
+|1
+|`u8`
+|`active_image`
+
+|`3`
+|1
+|`u8`
+|`ready_mask`
+
+|`4..7`
+|4
+|`u32 LE`
+|`boot_hex_received`
+
+|`8..11`
+|4
+|`u32 LE`
+|`boot_hex_expected`
+
+|`12..15`
+|4
+|`u32 LE`
+|`boot_bytes_written`
+
+|`16..19`
+|4
+|`u32 LE`
+|`app_hex_received`
+
+|`20..23`
+|4
+|`u32 LE`
+|`app_hex_expected`
+
+|`24..27`
+|4
+|`u32 LE`
+|`app_bytes_streamed`
+
+|`28`
+|1
+|`u8`
+|`last_update.stage`
+
+|`29`
+|1
+|`u8`
+|`last_update.hal_status`
+
+|`30..33`
+|4
+|`u32 LE`
+|`last_update.cps_status`
+
+|`34..37`
+|4
+|`u32 LE`
+|`last_update.programmed_bytes`
+
+|`38..39`
+|2
+|`u16 LE`
+|`last_update.chip_id`
+|===
+
+== Enum Values Used For Decode
+
+=== `op_result`
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x00`
+|OK
+
+|`0x01`
+|BAD_PARAM
+
+|`0x02`
+|BAD_IMAGE
+
+|`0x03`
+|SEQUENCE
+
+|`0x04`
+|PARSE_ERROR
+
+|`0x05`
+|NOT_READY
+
+|`0x06`
+|BUSY
+
+|`0x07`
+|PROGRAM_FAIL
+|===
+
+=== `session_state`
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x00`
+|IDLE
+
+|`0x01`
+|RX_BOOT
+
+|`0x02`
+|RX_APP
+
+|`0x03`
+|WAIT_IMAGE
+
+|`0x04`
+|READY
+
+|`0x05`
+|PROGRAMMING
+
+|`0x06`
+|DONE
+
+|`0x07`
+|ERROR
+|===
+
+=== `active_image`
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x00`
+|NONE
+
+|`0x01`
+|BOOT
+
+|`0x02`
+|APP
+|===
+
+=== `ready_mask`
+
+[cols="1,3", options="header"]
+|===
+|Bit |Meaning
+
+|`0x01`
+|Bootloader image accepted and ready
+
+|`0x02`
+|Application image accepted and ready
+|===
+
+Examples:
+
+* `0x00` -> none ready
+* `0x01` -> boot ready
+* `0x02` -> app ready
+* `0x03` -> boot + app ready
+
+=== `last_update.stage`
+
+The utility shows shortened names, but the values come from the STM enum below.
+
+[cols="1,4,3", options="header"]
+|===
+|Value |STM enum meaning |Utility label
+
+|`0x00`
+|IDLE
+|IDLE
+
+|`0x01`
+|PARSE_BOOTLOADER
+|PARSE_BOOT
+
+|`0x02`
+|PARSE_FIRMWARE
+|PARSE_APP
+
+|`0x03`
+|ENTER_EXCLUSIVE
+|ENTER_EXCLUSIVE
+
+|`0x04`
+|BOOTLOADER_LOAD
+|BOOT_LOAD
+
+|`0x05`
+|BOOTLOADER_VERIFY
+|BOOT_VERIFY
+
+|`0x06`
+|FIRMWARE_LOAD
+|APP_LOAD
+
+|`0x07`
+|FIRMWARE_VERIFY
+|APP_VERIFY
+
+|`0x08`
+|RESET
+|RESET
+
+|`0x09`
+|CHIP_ID_CHECK
+|CHIP_ID
+
+|`0x0A`
+|DONE
+|DONE
+|===
+
+== How The PC Should Process STM Responses
+
+=== Minimum Processing Rule
+
+After every response:
+
+1. parse the last 40 bytes
+2. decode `op_result`
+3. decode `session_state`
+4. decode `active_image`
+5. decode counters
+6. decide continue/retry/abort
+
+=== What To Validate During Boot Phase
+
+After `BEGIN_BOOT`, a good response normally looks like:
+
+* `op_result = OK`
+* `session_state = RX_BOOT`
+* `active_image = BOOT`
+* `boot_hex_expected = <boot file size>`
+* `last_update.stage = BOOT_LOAD`
+
+During boot `DATA` traffic:
+
+* `boot_hex_received` should increase by transmitted chunk length
+* `boot_bytes_written` should gradually increase as HEX is decoded
+* `session_state` should remain `RX_BOOT`
+* `active_image` should remain `BOOT`
+
+After `END_BOOT`, a good response normally looks like:
+
+* `op_result = OK`
+* `session_state = WAIT_IMAGE`
+* `active_image = NONE`
+* `ready_mask` includes boot bit `0x01`
+
+=== What To Validate During App Phase
+
+After `BEGIN_APP`, a good response normally looks like:
+
+* `op_result = OK`
+* `session_state = RX_APP`
+* `active_image = APP`
+* `app_hex_expected = <app file size>`
+* `last_update.stage = APP_LOAD`
+
+During app `DATA` traffic:
+
+* `app_hex_received` should increase by transmitted chunk length
+* `app_bytes_streamed` should gradually increase as decoded data is staged/programmed
+* `session_state` should remain `RX_APP`
+* `active_image` should remain `APP`
+
+After `END_IMAGE` for app, a good response normally looks like:
+
+* `op_result = OK`
+* `ready_mask` includes both boot and app bits
+* `session_state = READY`
+
+After `EXECUTE`, a successful final state normally looks like:
+
+* `op_result = OK`
+* `session_state = DONE`
+* `last_update.stage = DONE`
+* `chip_id = 0x4041`
+
+=== Decision Table For `op_result`
+
+[cols="1,3,4", options="header"]
+|===
+|Value |Meaning |Recommended host action
+
+|`OK`
+|Request accepted
+|Continue normal state machine after validating fields
+
+|`BAD_PARAM`
+|Malformed request
+|Stop immediately, report host framing bug
+
+|`BAD_IMAGE`
+|Image type or image contents invalid at protocol level
+|Stop, report file/type issue
+
+|`SEQUENCE`
+|Host sent a frame out of order or in wrong state
+|Stop, optionally query `STATUS`, then restart session
+
+|`PARSE_ERROR`
+|STM could not parse Intel HEX stream
+|Stop, report HEX file or chunking issue
+
+|`NOT_READY`
+|STM not ready for requested step
+|Query `STATUS`; usually restart or correct flow ordering
+
+|`BUSY`
+|STM busy in another operation
+|Wait briefly or query `STATUS`, then retry if appropriate
+
+|`PROGRAM_FAIL`
+|STM reached a programming or verify failure
+|Stop, query `STATUS`, optionally send `ABORT`, report CPS-side failure
+|===
+
+== Worked Example: `BEGIN_BOOT`
+
+From log `cps_fw_update_20260427_105001_189.log`:
+
+[source]
+----
+TX [BEGIN_BOOT] 02 0E 00 01 00 B1 00 01 03 01 B3 16 00 00
+RX [BEGIN_BOOT] 02 36 00 01 00 B1 00 01 03 01 B3 16 00 00 ...
+summary         result=OK state=RX_BOOT image=BOOT boot=0/5811 boot_wr=0
+                app=0/0 app_wr=0 stage=BOOT_LOAD hal=0x00 cps=0x00000000
+                prog=0 chip=0x0000
+----
+
+=== Why does RX start with `02 36 00` instead of `02 0E 00`?
+
+Because:
+
+* request length was `14` bytes (`0x000E`)
+* STM echoed those 14 request bytes
+* then appended the 40-byte trailer
+* total response length became `54` bytes (`14 + 40 = 54 = 0x0036`)
+
+So the returned frame begins with:
+
+[source]
+----
+02 36 00
+----
+
+and not with the original request length.
+
+=== Trailer Decode For This Example
+
+The 40-byte trailer for this response decodes as:
+
+[cols="2,4,4", options="header"]
+|===
+|Field |Raw value |Meaning
+
+|`op_result`
+|`0x00`
+|OK
+
+|`session_state`
+|`0x01`
+|RX_BOOT
+
+|`active_image`
+|`0x01`
+|BOOT
+
+|`ready_mask`
+|`0x00`
+|Nothing ready yet
+
+|`boot_hex_received`
+|`0`
+|No boot HEX data pushed yet
+
+|`boot_hex_expected`
+|`0x000016B3`
+|5811 bytes expected
+
+|`boot_bytes_written`
+|`0`
+|No decoded boot bytes written yet
+
+|`app_hex_received`
+|`0`
+|No app HEX data pushed yet
+
+|`app_hex_expected`
+|`0`
+|Not started yet
+
+|`app_bytes_streamed`
+|`0`
+|No app bytes written yet
+
+|`last_update.stage`
+|`0x04`
+|BOOT_LOAD
+
+|`last_update.hal_status`
+|`0x00`
+|HAL_OK
+
+|`last_update.cps_status`
+|`0x00000000`
+|No CPS status/error code yet
+
+|`last_update.programmed_bytes`
+|`0`
+|Nothing programmed yet
+
+|`last_update.chip_id`
+|`0x0000`
+|Not checked yet
+|===
+
+== Parsing Rule Recommended For PC Tools
+
+=== Safe Rule
+
+Do not try to decode the response by assuming a fixed echoed header size.
+
+Instead:
+
+1. Read the full API frame using `byte[1:2]` as total frame length.
+2. Validate total length is at least `43` bytes.
+3. Extract the *last 40 bytes*.
+4. Decode those 40 bytes using the layout in this document.
+
+=== Pseudocode
+
+[source,python]
+----
+frame = recv_full_frame()
+assert len(frame) >= 43
+
+trailer = frame[-40:]
+
+op_result          = trailer[0]
+session_state      = trailer[1]
+active_image       = trailer[2]
+ready_mask         = trailer[3]
+boot_hex_received  = le32(trailer[4:8])
+boot_hex_expected  = le32(trailer[8:12])
+boot_bytes_written = le32(trailer[12:16])
+app_hex_received   = le32(trailer[16:20])
+app_hex_expected   = le32(trailer[20:24])
+app_bytes_streamed = le32(trailer[24:28])
+stage              = trailer[28]
+hal_status         = trailer[29]
+cps_status         = le32(trailer[30:34])
+programmed_bytes   = le32(trailer[34:38])
+chip_id            = le16(trailer[38:40])
+----
+
+== End-To-End Host Pseudocode
+
+[source,python]
+----
+def send_frame(sock, frame, timeout_s=3.0, retries=3):
+    for attempt in range(1, retries + 1):
+        sock.sendall(frame)
+        rsp = recv_full_frame(sock, timeout_s)
+        if rsp is not None:
+            return decode_cps_fw_response(rsp)
+    raise RuntimeError("No STM response after retries")
+
+
+def stream_hex_file(sock, image_type, file_bytes, chunk_size):
+    rsp = send_frame(sock, build_begin(image_type, len(file_bytes)))
+    assert rsp.op_result == 0x00
+
+    offset = 0
+    while offset < len(file_bytes):
+        chunk = file_bytes[offset: offset + chunk_size]
+        rsp = send_frame(sock, build_data(image_type, offset, chunk))
+        assert rsp.op_result == 0x00
+        offset += len(chunk)
+
+    rsp = send_frame(sock, build_end(image_type, len(file_bytes)))
+    assert rsp.op_result == 0x00
+
+
+with open(boot_hex_path, "rb") as f:
+    boot_hex = f.read()
+with open(app_hex_path, "rb") as f:
+    app_hex = f.read()
+
+sock = connect_to_stm(ip="192.168.255.10", port=5002)
+
+stream_hex_file(sock, image_type=0x01, file_bytes=boot_hex, chunk_size=256)
+stream_hex_file(sock, image_type=0x02, file_bytes=app_hex, chunk_size=256)
+
+rsp = send_frame(sock, build_execute())
+assert rsp.op_result == 0x00
+assert rsp.session_state == 0x06
+assert rsp.chip_id == 0x4041
+----
+
+== Notes For Integration Team
+
+* `boot_hex_received` and `app_hex_received` count raw HEX ASCII bytes received from the PC.
+* `boot_bytes_written` and `app_bytes_streamed` count decoded payload bytes written toward CPS memory/programming flow.
+* `programmed_bytes` is taken from `last_update` and is most meaningful during/after application programming.
+* `chip_id` is only meaningful after `EXECUTE` reaches chip-ID check.
+* For `DATA` commands, the response preview often looks short in logs because the utility intentionally logs only the first bytes and then `...+N`.
+* The utility labels `PARSE_APP`, `BOOT_LOAD`, `APP_LOAD`, and `CHIP_ID` are friendly names for the firmware enum values shown above.
+* If the host keeps a UI progress bar, it should use `boot_hex_received / boot_hex_expected` during boot and `app_hex_received / app_hex_expected` during app.
+* The safest host parser is stateless with respect to the echo prefix and always decodes the last 40 bytes only.
+
+== Source of Truth
+
+If firmware and PC tool ever disagree, use the STM firmware source as the source of truth:
+
+* Trailer packing: `CM7/Core/Src/cm7_qi_app.c`
+* Result/state/image enums: `CM7/Core/Inc/cps_fw_stream.h`
+* Stage enums: `CM7/Core/Inc/cps_fw_update.h`

@@ -1,0 +1,616 @@
+= CPS FW Update End-to-End Flow
+:toc: left
+:toclevels: 4
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:last-update-label!:
+Document Version: 1.0 +
+Last Updated: 2026-04-27
+
+== Purpose
+
+This document explains the complete end-to-end flow for CPS firmware update:
+
+* SW utility on PC
+* STM32 Ethernet/API firmware
+* STM32 CPS FW stream handler
+* CPS4041 over I2C
+
+It is intended for system, firmware, validation, and software teams who need the full picture of how firmware travels from the PC to the CPS device.
+
+== 5W1H Summary
+
+[cols="1,4", options="header"]
+|===
+|Question |Answer
+
+|Who are the actors?
+|PC utility, STM32 Ethernet/API layer, STM32 CPS FW stream layer, STM32 I2C peripheral layer, and CPS4041 target.
+
+|What is being updated?
+|First the CPS bootloader image in SRAM/remap flow, then the CPS application image in MTP, followed by verify/reset/chip-ID check.
+
+|When does each layer act?
+|PC acts per command, STM API layer acts per received frame, STM FW stream layer acts per CPS FW operation, CPS acts when I2C register commands are issued.
+
+|Where does data live?
+|Full HEX files live on PC. STM keeps only session state, a small line buffer, and an app staging buffer. CPS stores bootloader in SRAM and application in MTP.
+
+|Why is the flow split into boot and app phases?
+|The CPS bootloader must be loaded and verified first so that the application can then be programmed through the CPS update protocol.
+
+|How is success confirmed?
+|STM returns per-step status in every response and final success after `EXECUTE` is confirmed by verify/reset/chip-ID check, with expected chip ID `0x4041`.
+|===
+
+== System Actors
+
+[cols="1,3,4", options="header"]
+|===
+|Actor |Code location |Responsibility
+
+|PC utility
+|`cps_ui_tool/src/app.py`, `cps_ui_tool/src/cps_fw_updater.py`, `cps_ui_tool/src/net_client.py`
+|Reads files, builds frames, sends over TCP, decodes responses, controls user flow
+
+|STM API dispatcher
+|`CM7/Core/Src/cm7_qi_app.c`
+|Receives API frame, routes CPS FW update requests to stream handler, packs status trailer
+
+|STM CPS FW stream engine
+|`CM7/Core/Src/cps_fw_stream.c`, `CM7/Core/Inc/cps_fw_stream.h`
+|Maintains session state, parses streamed HEX, stages data, drives CPS update protocol
+
+|STM low-level CPS result model
+|`CM7/Core/Inc/cps_fw_update.h`
+|Defines update stage/result structure reported back to host
+
+|CPS4041 target
+|Physical device over I2C
+|Accepts bootloader load, app programming, verify, reset, chip-ID read
+|===
+
+== End-to-End Architecture
+
+[source]
+----
+PC Utility
+  |
+  | TCP, API frames on port 5002
+  v
+STM32 Ethernet/API layer
+  |
+  | dispatches FW_UPDATE / QI_UNIT commands
+  v
+STM32 CPS FW stream state machine
+  |
+  | I2C register writes / reads
+  v
+CPS4041
+  |
+  | status / verify / chip-id
+  v
+STM32 response trailer
+  |
+  | TCP response
+  v
+PC Utility
+----
+
+== Full Operational Sequence
+
+=== Phase 0: Utility Preparation
+
+Who:
+
+* PC utility
+
+What:
+
+* user selects bootloader HEX and app HEX
+* utility opens files in binary mode
+* utility selects chunk size `256` or `512`
+* utility selects TCP transport path
+
+Where:
+
+* `src/app.py`
+* `src/cps_fw_updater.py`
+
+Why:
+
+* host must preserve original HEX stream formatting and order
+
+How:
+
+* file bytes are kept as raw ASCII HEX bytes
+* no full binary conversion is performed
+
+=== Phase 1: TCP Session Ownership
+
+Who:
+
+* PC utility
+* `NetClient`
+
+What:
+
+* if top-bar Ethernet is already connected, CPS FW tab borrows that socket exclusively
+* otherwise, updater opens its own temporary TCP socket
+
+Where:
+
+* `src/net_client.py`
+* `src/app.py`
+
+Why:
+
+* normal live polling/manual traffic must not interfere with firmware update request/reply order
+
+How:
+
+* `acquire_exclusive_socket`
+* pause polling/manual traffic
+* run FW session
+* `release_exclusive_socket` at end
+
+=== Phase 2: `BEGIN_BOOT`
+
+Who:
+
+* PC utility sends
+* STM API layer receives
+* STM CPS FW stream layer starts boot session
+
+What:
+
+* host tells STM bootloader image stream is starting
+* expected HEX file size is provided
+
+Where:
+
+* request framed by `cps_fw_updater.py`
+* received in `cm7_qi_app.c`
+* handled by `cps_fw_stream_begin`
+
+Why:
+
+* STM needs to know boot phase has started and which image type is active
+
+How:
+
+* `state` becomes `RX_BOOT`
+* `active_image` becomes `BOOT`
+* `boot_hex_expected` is stored
+* response trailer reports boot receive context back to PC
+
+=== Phase 3: `BOOT_DATA`
+
+Who:
+
+* PC utility sends HEX chunks
+* STM stream handler parses boot HEX
+* STM I2C layer writes decoded bootloader bytes into CPS SRAM
+
+What:
+
+* raw Intel HEX file is streamed chunk-by-chunk
+
+Where:
+
+* host chunks original HEX file bytes
+* STM progressively parses lines from incoming stream
+* decoded bytes are written toward CPS bootloader SRAM region
+
+Why:
+
+* avoids full image buffering inside STM
+
+How:
+
+* host sends `DATA(image=BOOT, offset, chunk_len, chunk_bytes)`
+* STM increments `boot_hex_received`
+* STM decodes Intel HEX records
+* STM increments `boot_bytes_written` as decoded bytes are actually written
+
+=== Phase 4: `END_BOOT`
+
+Who:
+
+* PC utility
+* STM stream handler
+* CPS device
+
+What:
+
+* bootloader stream is closed
+* STM performs bootloader verify flow inside CPS
+
+Where:
+
+* `cps_fw_stream_end_image`
+
+Why:
+
+* CPS bootloader must be validated before application programming can start
+
+How:
+
+* STM finalizes boot image receive
+* STM issues CPS bootloader verify command
+* if successful:
+  - boot ready bit is set in `ready_mask`
+  - `active_image` becomes `NONE`
+  - `state` typically becomes `WAIT_IMAGE`
+* if not successful:
+  - `op_result` becomes `PROGRAM_FAIL`
+  - `state` moves to error path
+
+=== Phase 5: `BEGIN_APP`
+
+Who:
+
+* PC utility
+* STM stream handler
+
+What:
+
+* application stream begins
+
+Where:
+
+* `cps_fw_stream_begin`
+
+Why:
+
+* STM must switch its receive context from bootloader to application
+
+How:
+
+* `state` becomes `RX_APP`
+* `active_image` becomes `APP`
+* `app_hex_expected` is stored
+
+=== Phase 6: `APP_DATA`
+
+Who:
+
+* PC utility
+* STM stream parser
+* STM I2C programming logic
+* CPS target
+
+What:
+
+* host streams app HEX file
+* STM parses HEX progressively
+* STM stages decoded application bytes into CPS program buffers
+
+Where:
+
+* host: `cps_fw_updater.py`
+* STM: `cps_fw_stream_push`
+* internal staging in `cps_fw_stream.c`
+
+Why:
+
+* STM cannot afford to store the full app image in RAM
+* CPS app programming uses staged buffer programming flow
+
+How:
+
+* `app_hex_received` increases with raw host chunk bytes
+* `app_bytes_streamed` increases with decoded bytes progressed to CPS program path
+* STM alternates CPS-side programming buffers internally
+* host sees progress through the trailer, not through separate telemetry
+
+=== Phase 7: `END_APP`
+
+Who:
+
+* PC utility
+* STM stream handler
+
+What:
+
+* final application stream close
+* final padding/flush of partial staged data
+
+Where:
+
+* `cps_fw_stream_end_image`
+
+Why:
+
+* app image may end on a partial internal buffer boundary
+* STM must finish staging and wait for pending CPS programming work
+
+How:
+
+* STM pads/flushed remaining staged app buffer if needed
+* STM waits for pending CPS program completion
+* on success:
+  - app ready bit is set in `ready_mask`
+  - app receive marked complete
+  - `state` becomes `READY` if boot is also ready
+
+=== Phase 8: `EXECUTE`
+
+Who:
+
+* PC utility
+* STM stream handler
+* CPS device
+
+What:
+
+* final CPS application verify
+* CPS reset
+* CPS chip-ID readback
+
+Where:
+
+* `cps_fw_stream_execute`
+
+Why:
+
+* receiving the image is not enough; CPS final programming result must be verified on target
+
+How:
+
+* STM checks that both boot and app ready bits are set
+* `state` becomes `PROGRAMMING`
+* STM issues CPS app verify command
+* STM resets CPS
+* STM waits settle time
+* STM reads chip ID
+* success criteria:
+  - verify succeeded
+  - chip ID equals `0x4041`
+  - `stage = DONE`
+  - `state = DONE`
+
+=== Phase 9: Response Handling Back To PC
+
+Who:
+
+* STM API layer
+* PC utility
+
+What:
+
+* STM packs the response trailer
+* PC decodes the trailer and decides next action
+
+Where:
+
+* STM: `cm7_qi_app.c`
+* host: `CpsUpdateReply.from_frame`
+
+Why:
+
+* PC must know exactly what STM believes the current session state is
+
+How:
+
+* last 40 bytes of every response contain normalized CPS FW status
+* PC uses these fields for progress UI, logs, and control decisions
+
+== Where The Data Lives At Each Step
+
+[cols="1,2,4", options="header"]
+|===
+|Stage |Primary storage |Notes
+
+|Before update
+|PC disk + PC RAM
+|Full boot/app HEX files exist only on the PC side
+
+|During boot receive
+|PC RAM + STM small stream buffers + CPS SRAM
+|STM does not store the full boot HEX file
+
+|After boot complete
+|CPS SRAM / boot remap context
+|Boot ready bit set on STM side
+
+|During app receive
+|PC RAM + STM line buffer + STM app staging buffer + CPS program buffers
+|STM still does not store the full app image
+
+|After app complete
+|CPS MTP/programmed image
+|Ready for final execute/verify/reset
+
+|After execute
+|CPS final programmed state
+|Chip ID check confirms target identity
+|===
+
+== Why The Architecture Looks This Way
+
+=== Why Raw HEX Is Streamed
+
+Because:
+
+* PC already has file storage
+* STM should avoid storing another full image copy
+* STM can parse Intel HEX incrementally
+
+=== Why Bootloader Is Separate From App
+
+Because:
+
+* CPS requires bootloader load/verify first
+* application programming depends on that CPS-side boot context
+
+=== Why `END_BOOT` Exists
+
+Because:
+
+* bootloader must be finalized and verified before app phase begins
+* `DATA` alone only streams bytes; it does not mean image is complete
+
+=== Why `END_APP` Exists
+
+Because:
+
+* STM may still have partial staged bytes to flush
+* CPS may still have pending program work to complete
+
+=== Why `EXECUTE` Is Separate
+
+Because:
+
+* image transfer completion is different from target-side verify/reset completion
+* host needs an explicit final checkpoint
+
+=== Why The Host Waits After Every TX
+
+Because:
+
+* this is a lock-step protocol
+* host must let STM validate each step
+* counters and state in the response are part of the control contract
+
+== What The Host Should Observe
+
+=== During Boot
+
+Expected progression:
+
+* `state = RX_BOOT`
+* `image = BOOT`
+* `boot_hex_received` rises until full boot HEX size is reached
+* `boot_bytes_written` rises as decoded payload is written
+
+=== After Boot End
+
+Expected:
+
+* `state = WAIT_IMAGE`
+* `image = NONE`
+* `ready_mask = 0x01`
+
+=== During App
+
+Expected progression:
+
+* `state = RX_APP`
+* `image = APP`
+* `app_hex_received` rises until full app HEX size is reached
+* `app_bytes_streamed` rises as decoded app bytes are staged/programmed
+
+=== After App End
+
+Expected:
+
+* `ready_mask = 0x03`
+* `state = READY`
+
+=== After Execute
+
+Expected:
+
+* `state = DONE`
+* `stage = DONE`
+* `chip_id = 0x4041`
+
+== Failure Paths
+
+=== Transport Failure
+
+Example:
+
+* no TCP response
+* short frame
+* socket reset
+
+Expected host action:
+
+* retry the same request a limited number of times
+* if still failing, issue `ABORT` if possible and report communication failure
+
+=== Protocol Failure
+
+Example:
+
+* `BAD_PARAM`
+* `SEQUENCE`
+* `PARSE_ERROR`
+
+Expected host action:
+
+* stop normal flow immediately
+* capture response trailer and logs
+* report issue to software/firmware team
+
+=== Programming Failure
+
+Example:
+
+* `PROGRAM_FAIL`
+* final chip ID mismatch
+
+Expected host action:
+
+* stop session
+* optionally query `STATUS`
+* preserve logs
+* report as CPS-side update failure
+
+== Observability And Logs
+
+The current utility already logs:
+
+* outbound frames
+* inbound frames
+* decoded summary
+* manual gating pauses
+* shared-socket borrow/release events
+
+This is useful for:
+
+* software debugging
+* firmware debugging
+* system integration sign-off
+
+== Cross-Team Questions Answered
+
+=== For The Software Team
+
+What must the host guarantee?
+
+* exact file-order chunk streaming
+* monotonic offset
+* one response awaited per request
+* final success based on trailer fields, not only on TCP success
+
+=== For The STM Firmware Team
+
+What does the host assume?
+
+* every request produces one response
+* last 40 response bytes always contain normalized CPS FW status
+* `BEGIN/END/EXECUTE` semantics do not change silently
+
+=== For The System Team
+
+What proves successful update?
+
+* all per-step responses are `OK`
+* boot and app both become ready
+* `EXECUTE` completes
+* final chip ID is `0x4041`
+
+=== For Validation
+
+What should be checked in logs?
+
+* request order is correct
+* counters move monotonically
+* `ready_mask` transitions `0x00 -> 0x01 -> 0x03`
+* final state is `DONE`
+* chip ID is correct
+

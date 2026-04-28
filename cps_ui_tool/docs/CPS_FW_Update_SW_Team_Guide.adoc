@@ -1,0 +1,734 @@
+= CPS FW Update SW Team Guide
+:toc: left
+:toclevels: 4
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:last-update-label!:
+Document Version: 1.0 +
+Last Updated: 2026-04-27
+
+== Purpose
+
+This document is for the PC software team working on the Python-based utility at:
+
+`D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool`
+
+It explains the PC-side implementation for CPS firmware update:
+
+* what the utility sends to STM over TCP
+* how the utility reads and chunks HEX files
+* how the utility decodes STM responses
+* how the utility decides whether to continue, retry, abort, or report success
+* where the current implementation lives in the Python codebase
+
+== 5W1H Summary
+
+[cols="1,4", options="header"]
+|===
+|Question |Answer
+
+|Who sends the update?
+|The PC utility sends the update. In the current codebase, this is handled mainly by `src/cps_fw_updater.py` and the CPS FW tab in `src/app.py`.
+
+|What is sent?
+|Raw Intel HEX file bytes are sent inside CPS FW API frames. The PC does not convert HEX to a full binary image before transmission.
+
+|When is each command sent?
+|In a strict sequence: `BEGIN_BOOT -> BOOT DATA* -> END_BOOT -> BEGIN_APP -> APP DATA* -> END_APP -> EXECUTE`.
+
+|Where is the transport path?
+|PC utility -> TCP socket to STM API port `5002` -> STM FW handler -> CPS update state machine.
+
+|Why is raw HEX streamed instead of full binary image?
+|To avoid storing the full bootloader/app image in STM RAM again. STM parses the HEX stream progressively and writes toward CPS as data arrives.
+
+|How does the host know what happened?
+|STM replies to every request with a frame containing a fixed 40-byte status trailer. The host decodes that trailer and uses it to drive next actions.
+|===
+
+== Code Map In The Utility
+
+=== UI Layer
+
+Current CPS FW tab code:
+
+* `src/app.py`
+* Main entry point for the tab: `_build_cps_fw_tab`
+* Start/update worker: `_cpsfw_worker`
+* Status query worker: `_cpsfw_query_worker`
+* Abort worker: `_cpsfw_abort_worker`
+* Progress panel update: `_cpsfw_set_reply`
+* Manual chunk popup: `_cpsfw_show_step_popup`
+
+=== Protocol / Update Runner
+
+Current CPS protocol implementation:
+
+* `src/cps_fw_updater.py`
+* Request frame builders
+* Response trailer decode
+* Full CPS FW update state machine
+* Retry logic for CPS FW commands
+* Optional step-by-step gating before each outbound frame
+
+Important classes:
+
+* `CpsUpdateReply`
+* `CpsStepContext`
+* `CpsFwUpdater`
+
+=== Shared Ethernet Client
+
+Current shared top-bar connection logic:
+
+* `src/net_client.py`
+
+Relevant responsibilities:
+
+* normal Ethernet send/receive loop
+* retry/resend for manual commands
+* CPS polling for live monitor mode
+* exclusive socket handoff for CPS FW update
+
+Important methods:
+
+* `acquire_exclusive_socket`
+* `release_exclusive_socket`
+
+== PC-Side Data Model
+
+=== What The Host Reads From Disk
+
+The host reads:
+
+* bootloader HEX file as raw bytes
+* application HEX file as raw bytes
+
+Important:
+
+* open files in binary mode
+* keep original ASCII HEX bytes
+* keep original CR/LF or LF line endings exactly as stored in file
+
+The current protocol expects STM to parse the Intel HEX stream progressively.
+
+=== What The Host Must Not Do
+
+The host must not:
+
+* convert HEX to a flattened binary image for transmission
+* remove line endings
+* reorder HEX records
+* merge, compress, or reformat the HEX stream
+
+=== Chunk Size
+
+Supported chunk sizes in the current implementation:
+
+* `256` bytes
+* `512` bytes
+
+This is chunking of the *HEX file byte stream*, not chunking of decoded firmware bytes.
+
+=== Offset
+
+For `DATA` frames, `offset` means:
+
+* byte offset inside the original HEX file stream
+* first chunk offset = `0`
+* next chunk offset = previous offset + previous chunk length
+
+The host must send chunks in exact file order.
+
+== TCP Transport Behavior
+
+=== Port
+
+Current STM API port:
+
+* `5002`
+
+=== Connection Modes
+
+The current utility supports two transport modes:
+
+* shared top-bar Ethernet socket
+* temporary CPS-only TCP socket
+
+Recommended behavior:
+
+* if top-bar Ethernet session is already connected, borrow that socket exclusively
+* if not connected, create a dedicated temporary TCP connection for the CPS FW session
+
+=== Why Exclusive Socket Borrowing Exists
+
+When the utility is already connected over Ethernet, `NetClient` owns:
+
+* a background RX loop
+* retry/resend handling
+* optional CPS polling
+
+During firmware update, none of that normal traffic should interfere. So the CPS FW tab temporarily acquires exclusive ownership of the connected socket, pauses polling/manual traffic, runs the FW session, then returns the socket.
+
+== Request Frame Format
+
+All CPS FW update request frames use:
+
+[source]
+----
+byte[0]   = 0x02                     // PGM_CMD
+byte[1:2] = total_length_le
+byte[3:4] = host sequence/token
+byte[5]   = 0xB1                     // FW_UPDATE
+byte[6]   = 0x00                     // reserved
+byte[7]   = operation
+byte[8]   = 0x03                     // QI_UNIT
+byte[9..] = payload
+----
+
+=== Operation Codes
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x01`
+|`BEGIN`
+
+|`0x02`
+|`DATA`
+
+|`0x03`
+|`END_IMAGE`
+
+|`0x04`
+|`EXECUTE`
+
+|`0x05`
+|`ABORT`
+
+|`0x06`
+|`STATUS`
+|===
+
+=== Image Type Codes
+
+[cols="1,3", options="header"]
+|===
+|Value |Meaning
+
+|`0x00`
+|None
+
+|`0x01`
+|Bootloader
+
+|`0x02`
+|Application
+|===
+
+=== Payload Formats
+
+==== `BEGIN`
+
+[source]
+----
+byte[9]    = image_type
+byte[10:13]= expected_hex_file_size_le
+----
+
+==== `DATA`
+
+[source]
+----
+byte[9]    = image_type
+byte[10:13]= file_offset_le
+byte[14:15]= chunk_len_le
+byte[16..] = raw HEX ASCII bytes
+----
+
+==== `END_IMAGE`
+
+[source]
+----
+byte[9]    = image_type
+byte[10:13]= expected_hex_file_size_le
+----
+
+==== `EXECUTE`, `ABORT`, `STATUS`
+
+No extra payload.
+
+== Recommended Host Send Sequence
+
+=== Bootloader Phase
+
+1. Read `bootloader.hex` as raw bytes
+2. Send `BEGIN` with image type `BOOT`
+3. Send `DATA` chunks in file order
+4. Wait for a response after each chunk
+5. Send `END_IMAGE` with image type `BOOT`
+
+=== Application Phase
+
+1. Read `firmware.hex` as raw bytes
+2. Send `BEGIN` with image type `APP`
+3. Send `DATA` chunks in file order
+4. Wait for a response after each chunk
+5. Send `END_IMAGE` with image type `APP`
+
+=== Finalization Phase
+
+1. Send `EXECUTE`
+2. Wait for final response
+3. Check final state, stage, and chip ID
+
+== Host Receive / Decode Model
+
+=== Response Shape
+
+Every STM response is:
+
+* a partial echo of the original request
+* plus a fixed 40-byte trailer at the end
+
+Important:
+
+* do not depend on the response echo being equal to the original request
+* STM rewrites the length field in the response
+* for long `DATA` frames, only the first 16 bytes are echoed
+
+=== Safe Decode Rule
+
+The host should always:
+
+1. read the full TCP API frame using `byte[1:2]` as total length
+2. verify response length is at least `43` bytes
+3. extract the last 40 bytes
+4. decode only those last 40 bytes as the CPS FW trailer
+
+=== 40-Byte Trailer Layout
+
+[cols="1,1,2,4", options="header"]
+|===
+|Offset |Size |Type |Field
+
+|`0`
+|1
+|`u8`
+|`op_result`
+
+|`1`
+|1
+|`u8`
+|`session_state`
+
+|`2`
+|1
+|`u8`
+|`active_image`
+
+|`3`
+|1
+|`u8`
+|`ready_mask`
+
+|`4..7`
+|4
+|`u32 LE`
+|`boot_hex_received`
+
+|`8..11`
+|4
+|`u32 LE`
+|`boot_hex_expected`
+
+|`12..15`
+|4
+|`u32 LE`
+|`boot_bytes_written`
+
+|`16..19`
+|4
+|`u32 LE`
+|`app_hex_received`
+
+|`20..23`
+|4
+|`u32 LE`
+|`app_hex_expected`
+
+|`24..27`
+|4
+|`u32 LE`
+|`app_bytes_streamed`
+
+|`28`
+|1
+|`u8`
+|`stage`
+
+|`29`
+|1
+|`u8`
+|`hal_status`
+
+|`30..33`
+|4
+|`u32 LE`
+|`cps_status`
+
+|`34..37`
+|4
+|`u32 LE`
+|`programmed_bytes`
+
+|`38..39`
+|2
+|`u16 LE`
+|`chip_id`
+|===
+
+== Meaning Of Decoded Fields
+
+=== `op_result`
+
+Host meaning:
+
+* whether the just-sent command was accepted or failed at protocol/programming level
+
+[cols="1,3,4", options="header"]
+|===
+|Value |Name |Host reaction
+
+|`0x00`
+|OK
+|Continue after validating context
+
+|`0x01`
+|BAD_PARAM
+|Stop and report host framing bug
+
+|`0x02`
+|BAD_IMAGE
+|Stop and report image/type mismatch
+
+|`0x03`
+|SEQUENCE
+|Stop; host sent command in wrong order or wrong state
+
+|`0x04`
+|PARSE_ERROR
+|Stop; STM could not parse incoming HEX stream
+
+|`0x05`
+|NOT_READY
+|Usually query `STATUS` and restart or fix order
+
+|`0x06`
+|BUSY
+|Wait/retry or query `STATUS`
+
+|`0x07`
+|PROGRAM_FAIL
+|Stop; CPS verify/program/reset step failed
+|===
+
+=== `session_state`
+
+High-level state of STM update session:
+
+[cols="1,3,4", options="header"]
+|===
+|Value |Name |Expected phase
+
+|`0x00`
+|IDLE
+|No active session
+
+|`0x01`
+|RX_BOOT
+|Receiving bootloader HEX
+
+|`0x02`
+|RX_APP
+|Receiving app HEX
+
+|`0x03`
+|WAIT_IMAGE
+|One image done, waiting for the other
+
+|`0x04`
+|READY
+|Boot + app both received, ready for `EXECUTE`
+
+|`0x05`
+|PROGRAMMING
+|In final verify/reset/chip-ID flow
+
+|`0x06`
+|DONE
+|Finished successfully
+
+|`0x07`
+|ERROR
+|Session failed
+|===
+
+=== `active_image`
+
+Which image STM believes it is currently receiving:
+
+* `NONE`
+* `BOOT`
+* `APP`
+
+=== Counters
+
+`boot_hex_received` and `app_hex_received`:
+
+* raw ASCII HEX bytes received from the PC
+
+`boot_bytes_written` and `app_bytes_streamed`:
+
+* decoded payload bytes progressed toward CPS memory/programming flow
+
+`programmed_bytes`:
+
+* internal CPS programming progress from the last update result
+
+`chip_id`:
+
+* meaningful only after successful `EXECUTE`
+* expected final value is `0x4041`
+
+== Host Decision Rules By Phase
+
+=== After `BEGIN_BOOT`
+
+Good response normally looks like:
+
+* `op_result = OK`
+* `session_state = RX_BOOT`
+* `active_image = BOOT`
+* `boot_hex_expected = <boot file size>`
+
+Host decision:
+
+* if all true, start boot `DATA`
+* else stop and report mismatch
+
+=== During Boot `DATA`
+
+Host should verify:
+
+* `session_state = RX_BOOT`
+* `active_image = BOOT`
+* `boot_hex_received` increases by chunk length
+
+Host decision:
+
+* if counters move forward, continue
+* if `SEQUENCE`, `PARSE_ERROR`, or `PROGRAM_FAIL`, stop and abort
+
+=== After `END_BOOT`
+
+Good response normally looks like:
+
+* `op_result = OK`
+* `session_state = WAIT_IMAGE`
+* `active_image = NONE`
+* `ready_mask` contains boot bit `0x01`
+
+Host decision:
+
+* if good, move to `BEGIN_APP`
+* else stop and report
+
+=== After `BEGIN_APP`
+
+Good response normally looks like:
+
+* `op_result = OK`
+* `session_state = RX_APP`
+* `active_image = APP`
+* `app_hex_expected = <app file size>`
+
+Host decision:
+
+* if good, start app `DATA`
+* else stop and report
+
+=== During App `DATA`
+
+Host should verify:
+
+* `session_state = RX_APP`
+* `active_image = APP`
+* `app_hex_received` increases by chunk length
+
+Host decision:
+
+* if counters move forward, continue
+* else stop and handle error
+
+=== After `END_APP`
+
+Good response normally looks like:
+
+* `op_result = OK`
+* `ready_mask` contains both boot and app bits
+* `session_state = READY`
+
+Host decision:
+
+* if good, send `EXECUTE`
+* else stop and report
+
+=== After `EXECUTE`
+
+Good final response normally looks like:
+
+* `op_result = OK`
+* `session_state = DONE`
+* `stage = DONE`
+* `chip_id = 0x4041`
+
+Host decision:
+
+* report success to user
+* release shared socket if borrowed
+
+== Retry And Error Handling
+
+=== Recommended Retry Strategy
+
+Recommended host strategy:
+
+* timeout per frame: about `3.0 s`
+* max retries: `3`
+* retry the exact same frame when no complete response is received
+
+The current utility follows this model in `CpsFwUpdater`.
+
+=== What To Retry
+
+Safe to retry when failure is transport-level:
+
+* socket timeout
+* short/incomplete frame
+* temporary communication loss
+
+Do not blindly retry forever when STM explicitly returned:
+
+* `BAD_PARAM`
+* `BAD_IMAGE`
+* `SEQUENCE`
+* `PARSE_ERROR`
+* `PROGRAM_FAIL`
+
+=== User Cancel
+
+On user cancel:
+
+1. stop sending new data
+2. send `ABORT` if possible
+3. release shared socket if borrowed
+4. report canceled state
+
+== Step-By-Step User Gating
+
+The current utility supports an operator-controlled mode:
+
+* checkbox: ask before each command/chunk
+* popup options:
+  - send this chunk
+  - send all
+  - cancel update
+
+This is for debug/bring-up and not required for automated integration.
+
+== Python Pseudocode Reference
+
+[source,python]
+----
+def read_hex_file(path: str) -> bytes:
+    with open(path, "rb") as f:
+        data = f.read()
+    if not data.startswith(b":"):
+        raise ValueError("Not an Intel HEX file")
+    return data
+
+
+def recv_frame(sock) -> bytes:
+    hdr = recv_exact(sock, 3)
+    total_len = hdr[1] | (hdr[2] << 8)
+    return hdr + recv_exact(sock, total_len - 3)
+
+
+def decode_reply(frame: bytes):
+    trailer = frame[-40:]
+    return {
+        "op_result": trailer[0],
+        "session_state": trailer[1],
+        "active_image": trailer[2],
+        "ready_mask": trailer[3],
+        "boot_hex_received": int.from_bytes(trailer[4:8], "little"),
+        "boot_hex_expected": int.from_bytes(trailer[8:12], "little"),
+        "boot_bytes_written": int.from_bytes(trailer[12:16], "little"),
+        "app_hex_received": int.from_bytes(trailer[16:20], "little"),
+        "app_hex_expected": int.from_bytes(trailer[20:24], "little"),
+        "app_bytes_streamed": int.from_bytes(trailer[24:28], "little"),
+        "stage": trailer[28],
+        "hal_status": trailer[29],
+        "cps_status": int.from_bytes(trailer[30:34], "little"),
+        "programmed_bytes": int.from_bytes(trailer[34:38], "little"),
+        "chip_id": int.from_bytes(trailer[38:40], "little"),
+    }
+
+
+def stream_hex(sock, image_type: int, file_bytes: bytes, chunk_size: int):
+    send_frame(sock, build_begin(image_type, len(file_bytes)))
+    rsp = decode_reply(recv_frame(sock))
+    check_begin_rsp(image_type, rsp)
+
+    offset = 0
+    while offset < len(file_bytes):
+        chunk = file_bytes[offset: offset + chunk_size]
+        send_frame(sock, build_data(image_type, offset, chunk))
+        rsp = decode_reply(recv_frame(sock))
+        check_data_rsp(image_type, offset, chunk, rsp)
+        offset += len(chunk)
+
+    send_frame(sock, build_end(image_type, len(file_bytes)))
+    rsp = decode_reply(recv_frame(sock))
+    check_end_rsp(image_type, rsp)
+
+
+boot_hex = read_hex_file(boot_path)
+app_hex = read_hex_file(app_path)
+
+stream_hex(sock, 0x01, boot_hex, 256)
+stream_hex(sock, 0x02, app_hex, 256)
+
+send_frame(sock, build_execute())
+final_rsp = decode_reply(recv_frame(sock))
+assert final_rsp["op_result"] == 0x00
+assert final_rsp["chip_id"] == 0x4041
+----
+
+== Integration Checklist
+
+Before handing the host implementation to system test, confirm:
+
+* HEX files are opened in binary mode
+* raw file bytes are transmitted without reformatting
+* chunk size is `256` or `512`
+* `offset` is monotonic
+* one request is in flight at a time
+* response parser uses the last 40 bytes only
+* retry logic exists for transport timeouts
+* explicit handling exists for `SEQUENCE`, `PARSE_ERROR`, and `PROGRAM_FAIL`
+* final success checks include `session_state = DONE` and `chip_id = 0x4041`
+

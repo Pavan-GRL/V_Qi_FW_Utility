@@ -1,0 +1,267 @@
+"""CPS4041 firmware updater via Ethernet (TCP).
+
+Protocol derived from base API:  02 09 01 00 B1 00 00 3X
+
+  Control frames (8 bytes, bytes[5:7] = 00 00):
+    Start:        02 09 01 00 B1 00 00 31   – init I2C, halt MCU, enable remap
+    Stop/Reset:   02 09 01 00 B1 00 00 30   – reset MCU, new firmware runs
+    CRC-BL check: 02 09 01 00 B1 00 00 34   – CACL_CRC_TEST on bootloader
+    CRC-App check:02 09 01 00 B1 00 00 35   – CACL_CRC_APP on app firmware
+    Status query: 02 09 01 00 B1 00 00 36   – read ADDR_FLAG result
+
+  Data chunk frames (8-byte header + CHUNK_SIZE bytes):
+    BL chunk:     02 09 01 00 B1 <seq_lo> <seq_hi> 32  + 512 bytes
+    App chunk:    02 09 01 00 B1 <seq_lo> <seq_hi> 33  + 512 bytes
+
+  CHUNK_SIZE = 512 bytes (matching bootloader SRAM buffer granularity)
+
+  Device side (ETH client / STM32) maps each received frame to I2C
+  operations on the CPS4041 following the bootloader protocol in
+  cps_wls_charger.c (ConvenientPower).
+"""
+
+from __future__ import annotations
+
+import socket
+import threading
+import time
+from typing import Callable, Optional
+
+
+CHUNK_SIZE = 512  # bytes per data chunk
+
+# ── Fixed 5-byte prefix present in every frame ────────────────────────────────
+_HDR5 = bytes([0x02, 0x09, 0x01, 0x00, 0xB1])
+
+# ── Command byte (frame byte[7], i.e. 3X nibble) ──────────────────────────────
+CMD_STOP     = 0x30   # FW update stop / MCU reset
+CMD_START    = 0x31   # FW update start
+CMD_BL_DATA  = 0x32   # Bootloader SRAM chunk  (CHUNK_SIZE bytes follow)
+CMD_APP_DATA = 0x33   # App firmware chunk      (CHUNK_SIZE bytes follow)
+CMD_CRC_BL   = 0x34   # Trigger bootloader CRC check
+CMD_CRC_APP  = 0x35   # Trigger app firmware CRC check
+CMD_STATUS   = 0x36   # Query flag register status
+
+
+# ── Frame builders ─────────────────────────────────────────────────────────────
+
+def build_ctrl_frame(cmd: int) -> bytes:
+    """8-byte control frame: 02 09 01 00 B1 00 00 <cmd>."""
+    return _HDR5 + bytes([0x00, 0x00, cmd])
+
+
+def build_data_frame(seq: int, cmd: int, data: bytes) -> bytes:
+    """Data frame: 8-byte header + CHUNK_SIZE bytes.
+
+    Header: 02 09 01 00 B1 <seq_lo> <seq_hi> <cmd>
+    """
+    if len(data) != CHUNK_SIZE:
+        raise ValueError(f"data must be exactly {CHUNK_SIZE} bytes, got {len(data)}")
+    return _HDR5 + bytes([seq & 0xFF, (seq >> 8) & 0xFF, cmd]) + data
+
+
+# ── Intel HEX parser (mirrors file_parse() in cps_wls_charger.c) ──────────────
+
+def parse_intel_hex(raw: bytes) -> bytes:
+    """Convert Intel HEX file bytes into a flat binary (data records only).
+
+    Handles type-00 (data) and type-01 (EOF) records.  Extended address
+    records are accepted but ignored because the CPS4041 bootloader
+    protocol maps the binary contiguously into SRAM.
+    """
+    result = bytearray()
+    text = raw.decode("ascii", errors="replace")
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith(":") or len(line) < 11:
+            continue
+        byte_count = int(line[1:3], 16)
+        rec_type   = int(line[7:9], 16)
+        if rec_type == 0x00:                          # data record
+            for j in range(byte_count):
+                result.append(int(line[9 + j * 2: 11 + j * 2], 16))
+        elif rec_type == 0x01:                        # EOF record
+            break
+    return bytes(result)
+
+
+def _pad_to_chunk(data: bytes) -> bytes:
+    """Zero-pad *data* to the next multiple of CHUNK_SIZE."""
+    rem = len(data) % CHUNK_SIZE
+    return data + bytes(CHUNK_SIZE - rem) if rem else data
+
+
+# ── Updater class ──────────────────────────────────────────────────────────────
+
+class CpsFwUpdater:
+    """Drives the CPS4041 firmware update sequence over a dedicated TCP socket.
+
+    Mirrors the 5-step update_firmware() sequence in cps_wls_charger.c:
+      1. Send START  → device: enable 32-bit I2C, write password, halt MCU
+      2. Stream bootloader in CHUNK_SIZE chunks (CMD_BL_DATA)
+      3. Send CMD_CRC_BL  → device verifies bootloader CRC (CACL_CRC_TEST)
+      4. Stream app FW    in CHUNK_SIZE chunks (CMD_APP_DATA)
+      5. Send CMD_CRC_APP → device verifies app CRC (CACL_CRC_APP)
+      6. Send STOP  → device resets MCU; new firmware starts
+    """
+
+    def __init__(
+        self,
+        ip: str,
+        port: int,
+        bootloader: bytes,
+        firmware: bytes,
+        on_log: Callable[[str], None],
+        on_progress: Callable[[float, str], None],
+        on_done: Callable[[bool, str], None],
+        cancel_event: threading.Event,
+        cmd_timeout: float = 3.0,
+        chunk_ack_timeout: float = 0.5,
+    ):
+        self.ip               = ip
+        self.port             = port
+        self.bootloader       = _pad_to_chunk(bootloader)
+        self.firmware         = _pad_to_chunk(firmware)
+        self.on_log           = on_log
+        self.on_progress      = on_progress
+        self.on_done          = on_done
+        self.cancel           = cancel_event
+        self.cmd_timeout      = cmd_timeout
+        self.chunk_ack_timeout = chunk_ack_timeout
+        self._sock: Optional[socket.socket] = None
+
+    # ── public entry point ────────────────────────────────────────────────────
+
+    def run(self) -> None:
+        try:
+            self._connect()
+            self._update()
+        except RuntimeError as e:
+            self.on_log(f"[ABORT] {e}")
+            self.on_done(False, str(e))
+        except Exception as e:
+            self.on_log(f"[ERROR] {type(e).__name__}: {e}")
+            self.on_done(False, f"{type(e).__name__}: {e}")
+        finally:
+            self._disconnect()
+
+    # ── socket helpers ────────────────────────────────────────────────────────
+
+    def _connect(self) -> None:
+        self.on_log(f"Connecting to {self.ip}:{self.port} ...")
+        self._sock = socket.create_connection((self.ip, self.port), timeout=5.0)
+        self._sock.settimeout(self.cmd_timeout)
+        self.on_log("Connected.")
+
+    def _disconnect(self) -> None:
+        s, self._sock = self._sock, None
+        if s:
+            try:
+                s.close()
+            except Exception:
+                pass
+
+    def _send(self, frame: bytes, tag: str) -> None:
+        assert self._sock is not None
+        preview = " ".join(f"{b:02X}" for b in frame[:24])
+        extra   = f" …+{len(frame) - 24}B" if len(frame) > 24 else ""
+        self.on_log(f"  TX [{tag}] {preview}{extra}  ({len(frame)} B)")
+        self._sock.sendall(frame)
+
+    def _recv(self, timeout: float, tag: str) -> bytes:
+        """Receive whatever arrives within *timeout* seconds (best-effort)."""
+        assert self._sock is not None
+        self._sock.settimeout(timeout)
+        buf = b""
+        deadline = time.monotonic() + timeout
+        try:
+            while time.monotonic() < deadline:
+                if self.cancel.is_set():
+                    raise RuntimeError("Cancelled")
+                try:
+                    chunk = self._sock.recv(1024)
+                    if chunk:
+                        buf += chunk
+                        break
+                except socket.timeout:
+                    break
+        finally:
+            self._sock.settimeout(self.cmd_timeout)
+        if buf:
+            preview = " ".join(f"{b:02X}" for b in buf[:32])
+            extra   = f" …+{len(buf) - 32}B" if len(buf) > 32 else ""
+            self.on_log(f"  RX [{tag}] {preview}{extra}  ({len(buf)} B)")
+        else:
+            self.on_log(f"  RX [{tag}] (no response within {timeout:.1f}s)")
+        return buf
+
+    def _send_ctrl(self, cmd: int, tag: str) -> bytes:
+        self._check_cancel()
+        self._send(build_ctrl_frame(cmd), tag)
+        return self._recv(self.cmd_timeout, tag)
+
+    def _check_cancel(self) -> None:
+        if self.cancel.is_set():
+            raise RuntimeError("Cancelled by user")
+
+    # ── update sequence ───────────────────────────────────────────────────────
+
+    def _update(self) -> None:
+        bl  = self.bootloader
+        app = self.firmware
+        n_bl  = len(bl)  // CHUNK_SIZE
+        n_app = len(app) // CHUNK_SIZE
+
+        self.on_log("=" * 60)
+        self.on_log("CPS4041 Firmware Update")
+        self.on_log(f"  Bootloader : {len(bl)} B  ({n_bl} × {CHUNK_SIZE} B chunks)")
+        self.on_log(f"  App FW     : {len(app)} B  ({n_app} × {CHUNK_SIZE} B chunks)")
+        self.on_log("=" * 60)
+
+        # ── Step 0: Start ─────────────────────────────────────────────────────
+        self.on_log("\n[Step 0] FW Update Start  (init I2C, halt MCU, enable remap)")
+        self.on_progress(0.01, "Starting update...")
+        self._send_ctrl(CMD_START, "FW_START")
+
+        # ── Step 1: Stream bootloader ─────────────────────────────────────────
+        self.on_log(f"\n[Step 1] Sending bootloader ({n_bl} × {CHUNK_SIZE} B chunks)...")
+        for i in range(n_bl):
+            self._check_cancel()
+            chunk = bl[i * CHUNK_SIZE: (i + 1) * CHUNK_SIZE]
+            self._send(build_data_frame(i, CMD_BL_DATA, chunk), f"BL {i+1}/{n_bl}")
+            self._recv(self.chunk_ack_timeout, f"ACK_BL_{i+1}")
+            self.on_progress(0.01 + 0.29 * (i + 1) / n_bl,
+                             f"Bootloader  {i+1}/{n_bl}")
+
+        # ── Step 2: Bootloader CRC check ──────────────────────────────────────
+        self.on_log("\n[Step 2] Bootloader CRC check  (CACL_CRC_TEST)...")
+        self.on_progress(0.30, "BL CRC check...")
+        resp = self._send_ctrl(CMD_CRC_BL, "CRC_BL")
+        if not resp:
+            self.on_log("  (no CRC response – continuing)")
+
+        # ── Step 3: Stream app firmware ───────────────────────────────────────
+        self.on_log(f"\n[Step 3] Sending app firmware ({n_app} × {CHUNK_SIZE} B chunks)...")
+        for i in range(n_app):
+            self._check_cancel()
+            chunk = app[i * CHUNK_SIZE: (i + 1) * CHUNK_SIZE]
+            self._send(build_data_frame(i, CMD_APP_DATA, chunk), f"App {i+1}/{n_app}")
+            self._recv(self.chunk_ack_timeout, f"ACK_App_{i+1}")
+            self.on_progress(0.30 + 0.60 * (i + 1) / n_app,
+                             f"App FW  {i+1}/{n_app}")
+
+        # ── Step 4: App CRC check ─────────────────────────────────────────────
+        self.on_log("\n[Step 4] App firmware CRC check  (CACL_CRC_APP)...")
+        self.on_progress(0.90, "App CRC check...")
+        resp = self._send_ctrl(CMD_CRC_APP, "CRC_APP")
+        if not resp:
+            self.on_log("  (no CRC response – continuing)")
+
+        # ── Step 5: Stop / MCU reset ──────────────────────────────────────────
+        self.on_log("\n[Step 5] Stop / MCU reset...")
+        self.on_progress(0.97, "Resetting MCU...")
+        self._send(build_ctrl_frame(CMD_STOP), "FW_STOP")
+
+        self.on_log("\n[DONE] Firmware update complete!")
+        self.on_progress(1.0, "Done")
+        self.on_done(True, "Firmware update completed successfully.")
