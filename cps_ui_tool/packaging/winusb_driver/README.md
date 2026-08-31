@@ -1,6 +1,6 @@
 # GRL V_QI WinUSB Driver Package
 
-This folder replaces the manual Zadig step for the `VID_227F / PID_0006` USB path used by the app.
+This folder replaces the manual Zadig step for the default `VID_3985 / PID_0007` USB path used by the app (`GRL Platform Solutions`, `V-QI`, language ID `1033`).
 
 ## Files
 
@@ -14,8 +14,8 @@ This folder replaces the manual Zadig step for the `VID_227F / PID_0006` USB pat
 2. Open Device Manager.
 3. Find the USB device and open `Properties > Details > Hardware Ids`.
 4. Confirm the correct hardware ID:
-   - Single-interface device: `USB\VID_227F&PID_0006`
-   - Composite device: `USB\VID_227F&PID_0006&MI_00` or similar
+   - Single-interface device: `USB\VID_3985&PID_0007`
+   - Composite device: `USB\VID_3985&PID_0007&MI_00` or similar
 5. If the hardware ID includes `MI_XX`, edit `GRL_V_QI_WinUSB.inf` and replace the ID in both model entries before generating the catalog.
 
 ## Build The Signed Package

@@ -1,0 +1,160 @@
+Traceback (most recent call last):
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 862, in callit
+    func(*args)
+    ~~~~^^^^^^^
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\app.py", line 3936, in _stm_dfu_refresh_devices
+    devices = enumerate_dfu_devices()
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\stm_dfu.py", line 370, in enumerate_dfu_devices
+    for cfg in dev:
+               ^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 1151, in __iter__
+    yield Configuration(self, i)
+          ~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 613, in __init__
+    desc = backend.get_configuration_descriptor(
+            self.device._ctx.dev,
+            configuration
+        )
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 777, in get_configuration_descriptor
+    _check(self.lib.libusb_get_config_descriptor(
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            dev.devid,
+            ^^^^^^^^^^
+            config, byref(cfg)))
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 604, in _check
+    raise USBError(_strerror(ret), ret, _libusb_errno[ret])
+usb.core.USBError: [Errno 2] Entity not found
+
+---
+Traceback (most recent call last):
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 862, in callit
+    func(*args)
+    ~~~~^^^^^^^
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\app.py", line 3936, in _stm_dfu_refresh_devices
+    devices = enumerate_dfu_devices()
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\stm_dfu.py", line 370, in enumerate_dfu_devices
+    for cfg in dev:
+               ^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 1151, in __iter__
+    yield Configuration(self, i)
+          ~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 613, in __init__
+    desc = backend.get_configuration_descriptor(
+            self.device._ctx.dev,
+            configuration
+        )
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 777, in get_configuration_descriptor
+    _check(self.lib.libusb_get_config_descriptor(
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            dev.devid,
+            ^^^^^^^^^^
+            config, byref(cfg)))
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 604, in _check
+    raise USBError(_strerror(ret), ret, _libusb_errno[ret])
+usb.core.USBError: [Errno 2] Entity not found
+
+---
+Traceback (most recent call last):
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 862, in callit
+    func(*args)
+    ~~~~^^^^^^^
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\app.py", line 3936, in _stm_dfu_refresh_devices
+    devices = enumerate_dfu_devices()
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\stm_dfu.py", line 370, in enumerate_dfu_devices
+    for cfg in dev:
+               ^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 1151, in __iter__
+    yield Configuration(self, i)
+          ~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 613, in __init__
+    desc = backend.get_configuration_descriptor(
+            self.device._ctx.dev,
+            configuration
+        )
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 777, in get_configuration_descriptor
+    _check(self.lib.libusb_get_config_descriptor(
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            dev.devid,
+            ^^^^^^^^^^
+            config, byref(cfg)))
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 604, in _check
+    raise USBError(_strerror(ret), ret, _libusb_errno[ret])
+usb.core.USBError: [Errno 2] Entity not found
+
+---
+Traceback (most recent call last):
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 862, in callit
+    func(*args)
+    ~~~~^^^^^^^
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\app.py", line 3936, in _stm_dfu_refresh_devices
+    devices = enumerate_dfu_devices()
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\stm_dfu.py", line 370, in enumerate_dfu_devices
+    for cfg in dev:
+               ^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 1151, in __iter__
+    yield Configuration(self, i)
+          ~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 613, in __init__
+    desc = backend.get_configuration_descriptor(
+            self.device._ctx.dev,
+            configuration
+        )
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 777, in get_configuration_descriptor
+    _check(self.lib.libusb_get_config_descriptor(
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            dev.devid,
+            ^^^^^^^^^^
+            config, byref(cfg)))
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 604, in _check
+    raise USBError(_strerror(ret), ret, _libusb_errno[ret])
+usb.core.USBError: [Errno 2] Entity not found
+
+---
+Traceback (most recent call last):
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 862, in callit
+    func(*args)
+    ~~~~^^^^^^^
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\app.py", line 3975, in _stm_dfu_refresh_devices
+    devices = enumerate_dfu_devices()
+  File "D:\V_QI\v_qi_utils_git\V_Qi_FW_Utility\cps_ui_tool\src\stm_dfu.py", line 370, in enumerate_dfu_devices
+    for cfg in dev:
+               ^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 1151, in __iter__
+    yield Configuration(self, i)
+          ~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\core.py", line 613, in __init__
+    desc = backend.get_configuration_descriptor(
+            self.device._ctx.dev,
+            configuration
+        )
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 777, in get_configuration_descriptor
+    _check(self.lib.libusb_get_config_descriptor(
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            dev.devid,
+            ^^^^^^^^^^
+            config, byref(cfg)))
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\GRL\AppData\Local\Programs\Python\Python313\Lib\site-packages\usb\backend\libusb1.py", line 604, in _check
+    raise USBError(_strerror(ret), ret, _libusb_errno[ret])
+usb.core.USBError: [Errno 2] Entity not found
+
+---

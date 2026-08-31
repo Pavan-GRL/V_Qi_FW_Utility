@@ -1,5 +1,5 @@
 """
-ESP32 ROM Bootloader Flasher — over Ethernet via STM UART bridge.
+ESP32 ROM Bootloader Flasher — over STM UART bridge via Ethernet or USB.
 
 Protocol reference: https://github.com/cpq/esputil
                     https://docs.espressif.com/projects/esptool/en/latest/advanced-topics/serial-protocol.html
@@ -11,7 +11,7 @@ Sequence (matches `esputil -fp 0x220 flash 0 firmware.bin`):
   4. SPI_ATTACH     (op=0x0D)  — attach SPI flash
   5. SPI_SET_PARAMS (op=0x0B)  — configure flash geometry
   6. FLASH_BEGIN    (op=0x02)  — erase target region
-  7. FLASH_DATA     (op=0x03)  — write 4 KB blocks (with F1/F2 patching on first block)
+  7. FLASH_DATA     (op=0x03)  — write 256-byte blocks (with F1/F2 patching on first block)
   8. FLASH_END      (op=0x04)  — finish and reboot
 
 Chain: PC ─TCP→ STM H7 ─UART→ ESP ROM bootloader
@@ -23,7 +23,7 @@ import struct
 import socket
 import time
 import threading
-from typing import Callable, Optional
+from typing import Callable, Optional, Protocol
 
 # ── SLIP constants (RFC 1055) ────────────────────────────────────────────────
 SLIP_END     = 0xC0
@@ -85,14 +85,42 @@ CHIP_BLA = {
     CHIP_ESP8266:    0x0000,
 }
 
-FLASH_BLOCK_SIZE = 4096
-DEFAULT_FLASH_BAUD = 921600
+FLASH_BLOCK_SIZE = 256
+DEFAULT_FLASH_BAUD = 115200
+STM_FW_FIRST_RESP_TIMEOUT = 2.0
+STM_FW_API_PKT_TYPE = 0x02
+STM_FW_API_MAX_LEN = 513
+STM_FW_API_SAFE_MAX_LEN = STM_FW_API_MAX_LEN - 1
+STM_FW_API_SAFE_WIRE_LEN = STM_FW_API_MAX_LEN
+STM_FW_API_WRITE_OVERHEAD = 11
+STM_FW_MAX_SLIP_LEN = STM_FW_API_MAX_LEN - STM_FW_API_WRITE_OVERHEAD
+STM_FW_SAFE_MAX_SLIP_LEN = STM_FW_API_SAFE_MAX_LEN - STM_FW_API_WRITE_OVERHEAD
+STM_FW_API_FUNC = 0xB1
+STM_FW_CTRL_TYPE_DISPLAY = 0x04
+STM_FW_API_END = 0x00
+STM_FW_API_START = 0x01
+STM_FW_API_WRITE = 0x02
+STM_FW_API_USB_FORCE_FS = 0x05
+STM_FW_API_USB_RESTORE_HS = 0x06
+STM_FW_ECHO_MAGIC = b"\xA5\x5A"
+STM_FW_START_SETTLE_SEC = 1.00
+AUTO_FLASH_DATA_LOG_INTERVAL = 1024
+AUTO_FLASH_DATA_PROGRESS_MAX_UPDATES = 25
+USB_FLASH_DATA_PACE_SEC = 0.0
+# FLASH_DATA packet = ESP command header(8) + FLASH_DATA sub-header(16) + data.
+# Use the ROM flasher's natural page size. Pathological SLIP escaping can exceed
+# one 512-byte API frame, but normal ESP binaries remain within the current limit.
+USB_FLASH_DATA_BLOCK_SIZE = 256
+
+STM_FW_SEQ_SKIP_SPECIAL = "skip_special"
+STM_FW_SEQ_UINT8_WRAP = "uint8_wrap"
+STM_FW_SEQ_FIXED = "fixed"
 
 FW_UPDATE_STEP_INFO = (
     {
         "name": "SYNC",
         "opcode": OP_SYNC,
-        "purpose": "Handshake with the ESP ROM bootloader and confirm the STM bridge path.",
+        "purpose": "Handshake with the ESP ROM bootloader and confirm the STM API/UART path.",
         "payload": "07 07 12 20 + 32 x 55 bytes",
         "reply_expected": True,
     },
@@ -121,13 +149,13 @@ FW_UPDATE_STEP_INFO = (
         "name": "FLASH_BEGIN",
         "opcode": OP_FLASH_BEGIN,
         "purpose": "Erase the target flash region before programming.",
-        "payload": "size, num_blocks, block_size=4096, flash_offset[, encrypt=0]",
+        "payload": f"size, num_blocks, block_size={FLASH_BLOCK_SIZE}, flash_offset[, encrypt=0]",
         "reply_expected": True,
     },
     {
         "name": "FLASH_DATA",
         "opcode": OP_FLASH_DATA,
-        "purpose": "Program one 4KB block at a time; block 0 may have flash params patched.",
+        "purpose": f"Program one {FLASH_BLOCK_SIZE}-byte block at a time; block 0 may have flash params patched.",
         "payload": "len, seq, 0, 0 + data block, checksum=data XOR seeded with 0xEF",
         "reply_expected": True,
     },
@@ -161,17 +189,19 @@ def format_fw_update_plan(
     flash_offset: int,
     flash_params: int,
     flash_baud: int = DEFAULT_FLASH_BAUD,
+    flash_block_size: int = FLASH_BLOCK_SIZE,
 ) -> str:
     """Return a human-readable summary of the FW update command flow."""
-    num_blocks = (firmware_size + FLASH_BLOCK_SIZE - 1) // FLASH_BLOCK_SIZE
+    num_blocks = (firmware_size + flash_block_size - 1) // flash_block_size
     steps = _build_fw_update_step_info(flash_baud)
     lines = [
         "FW update command flow:",
-        "  TX path        : HostPC -> STM TCP bridge -> ESP/disp ROM bootloader",
-        "  RX path        : ESP/disp ROM bootloader -> STM -> HostPC",
-        "  Echo expected  : NO. The STM bridge is transparent and should not echo programming bytes.",
+        "  TX path        : HostPC -> STM FW API -> ESP/disp ROM bootloader",
+        "  RX path        : ESP/disp ROM bootloader -> STM FW API -> HostPC",
+        "  Echo expected  : NO. The raw ESP bytes are carried inside STM API replies.",
         "  Reply expected : YES, for each ESP ROM bootloader command below.",
-        f"  Image size      : {firmware_size} bytes ({num_blocks} blocks of {FLASH_BLOCK_SIZE} bytes)",
+        "  STM API flow   : START once, WRITE ESP SLIP bytes, END on cleanup",
+        f"  Image size      : {firmware_size} bytes ({num_blocks} blocks of {flash_block_size} bytes)",
         f"  Flash offset    : 0x{flash_offset:X}",
         f"  Flash params    : 0x{flash_params:04X}",
         f"  Flash baud      : {flash_baud}",
@@ -180,7 +210,7 @@ def format_fw_update_plan(
     for step_num, item in enumerate(steps, start=1):
         repeat_suffix = f" x {num_blocks}" if item["name"] == "FLASH_DATA" else ""
         reply_text = (
-            "YES - bootloader reply/ack returns on the same bridge path"
+            "YES - bootloader reply/ack returns on the same STM API session"
             if item["reply_expected"]
             else "NO"
         )
@@ -291,12 +321,292 @@ def _fmt_ms(seconds: float) -> str:
 
 # ── ESP Flasher class ────────────────────────────────────────────────────────
 
+class BridgeTransport(Protocol):
+    def sendall(self, data: bytes) -> None: ...
+    def recv(self, size: int) -> bytes: ...
+    def settimeout(self, timeout: float) -> None: ...
+    def close(self) -> None: ...
+
+
+class StmEspFwRemoteTimeout(Exception):
+    """STM replied that no ESP ROM response arrived."""
+
+
+class StmEspFwRemoteReject(Exception):
+    """STM rejected the ESP FW write request."""
+
+
+class StmEspFwApiTransport:
+    """
+    Wrap raw ESP SLIP frames inside the STM Display FW-update API.
+    """
+
+    def __init__(
+        self,
+        base: BridgeTransport,
+        log: Callable[[str], None] | None = None,
+        transport_name: str = "STM FW API",
+        settle_sec: float = STM_FW_START_SETTLE_SEC,
+        seq_mode: str = STM_FW_SEQ_UINT8_WRAP,
+        fixed_seq: int = 1,
+    ):
+        self._base = base
+        self._log = log or (lambda s: None)
+        self._transport_name = transport_name
+        self._settle_sec = max(float(settle_sec), 0.0)
+        self._timeout_s = 1.5
+        self._seq = 1
+        self._seq_mode = seq_mode
+        self._fixed_seq = int(fixed_seq) & 0xFF
+        self._pending_rx = bytearray()
+        self.use_usb_wire_valid_lengths = False
+
+    def settimeout(self, timeout: float) -> None:
+        self._timeout_s = max(float(timeout), 0.0)
+        self._base.settimeout(self._timeout_s)
+
+    def close(self) -> None:
+        self._base.close()
+
+    def replace_base(self, base: BridgeTransport, transport_name: str | None = None) -> None:
+        self._base = base
+        if transport_name:
+            self._transport_name = transport_name
+        self._base.settimeout(self._timeout_s)
+        self._pending_rx.clear()
+
+    def start_session(self) -> None:
+        self._log(f"Sending API_ESP_FW_START over {self._transport_name}...")
+        resp = self._roundtrip_control(STM_FW_API_START)
+        self._log(f"API_ESP_FW_START RX: {_hex_preview(resp)}")
+        if self._settle_sec > 0.0:
+            time.sleep(self._settle_sec)
+            self._log(f"ESP FW session settled for {self._settle_sec:.2f} s.")
+
+    def end_session(self) -> None:
+        self._log(f"Sending API_ESP_FW_END over {self._transport_name}...")
+        resp = self._roundtrip_control(STM_FW_API_END)
+        self._log(f"API_ESP_FW_END RX: {_hex_preview(resp)}")
+
+    def force_usb_fs(self) -> None:
+        self._log(f"Sending API_ESP_FW_USB_FORCE_FS over {self._transport_name}...")
+        resp = self._roundtrip_control(STM_FW_API_USB_FORCE_FS)
+        self._log(f"API_ESP_FW_USB_FORCE_FS RX: {_hex_preview(resp)}")
+
+    def restore_usb_hs(self) -> None:
+        self._log(f"Sending API_ESP_FW_USB_RESTORE_HS over {self._transport_name}...")
+        resp = self._roundtrip_control(STM_FW_API_USB_RESTORE_HS)
+        self._log(f"API_ESP_FW_USB_RESTORE_HS RX: {_hex_preview(resp)}")
+
+    def sendall(self, data: bytes) -> None:
+        if len(data) > STM_FW_SAFE_MAX_SLIP_LEN:
+            raise RuntimeError(
+                f"ESP SLIP frame is {len(data)} bytes, exceeds safe STM API write limit "
+                f"{STM_FW_SAFE_MAX_SLIP_LEN} bytes"
+            )
+        payload = struct.pack("<H", len(data)) + data
+        frame = self._build_api_frame(STM_FW_API_WRITE, payload)
+        self._base.sendall(self._prepare_wire_frame(frame))
+
+    def echo_test(self, data: bytes) -> bytes:
+        return self.echo_test_padded(data, wire_len=0)
+
+    def echo_test_padded(self, data: bytes, wire_len: int = 0) -> bytes:
+        if len(data) + len(STM_FW_ECHO_MAGIC) > STM_FW_SAFE_MAX_SLIP_LEN:
+            raise RuntimeError(
+                f"ESP FW echo payload is {len(data)} bytes, exceeds test limit "
+                f"{STM_FW_SAFE_MAX_SLIP_LEN - len(STM_FW_ECHO_MAGIC)} bytes"
+            )
+        test_payload = STM_FW_ECHO_MAGIC + data
+        payload = struct.pack("<H", len(test_payload)) + test_payload
+        pad_tail_len = 0
+        frame = self._build_api_frame(STM_FW_API_WRITE, payload)
+        wire = self._prepare_wire_frame(frame, wire_len=wire_len)
+        if wire_len > 0:
+            target_wire_len = int(wire_len)
+            if target_wire_len < len(frame):
+                raise RuntimeError(
+                    f"ESP FW echo wire length {target_wire_len} is smaller than API frame {len(frame)}"
+                )
+            pad_tail_len = max(0, target_wire_len - len(frame))
+        if self.use_usb_wire_valid_lengths:
+            declared_len = wire[1] | (wire[2] << 8)
+            self._log(
+                f"API_ESP_FW_ECHO TX api_len={declared_len} wire_len={len(wire)} "
+                f"unpadded_frame_len={len(frame)} "
+                f"logical_echo_len={len(test_payload)} pad_tail_len={pad_tail_len}"
+            )
+        else:
+            self._log(
+                f"API_ESP_FW_ECHO TX seq=0x{frame[4]:02X}{frame[3]:02X} "
+                f"api_len={len(frame)} wire_len={len(wire)} "
+                f"logical_echo_len={len(test_payload)} pad_tail_len={pad_tail_len}"
+            )
+        self._base.sendall(wire)
+        resp = self._read_api_frame()
+        raw = resp[9:] if len(resp) > 9 else b""
+        expected = struct.pack("<H", len(test_payload)) + test_payload
+        if not raw.startswith(expected):
+            raise RuntimeError(
+                f"ESP FW echo mismatch: expected prefix {len(expected)} bytes, got {len(raw)} bytes"
+            )
+        return raw
+
+    def recv(self, size: int) -> bytes:
+        if self._pending_rx:
+            return self._take_pending(size)
+
+        frame = self._read_api_frame()
+        raw = frame[9:] if len(frame) > 9 else b""
+        if raw == b"\xFF":
+            self._log("API_ESP_FW_WRITE RX: FF (STM timed out waiting for ESP response)")
+            raise StmEspFwRemoteTimeout("STM timed out waiting for ESP response")
+        if raw == b"\xFE":
+            self._log("API_ESP_FW_WRITE RX: FE (STM rejected ESP FW write request)")
+            raise StmEspFwRemoteReject("STM rejected ESP FW write request")
+        if not raw:
+            raise TimeoutError("STM returned no ESP response payload")
+
+        self._pending_rx.extend(raw)
+        return self._take_pending(size)
+
+    def _take_pending(self, size: int) -> bytes:
+        take = max(1, int(size))
+        out = bytes(self._pending_rx[:take])
+        del self._pending_rx[:take]
+        return out
+
+    def _build_api_frame(self, subop: int, payload: bytes = b"") -> bytes:
+        total_len = 9 + len(payload)
+        if total_len > STM_FW_API_SAFE_MAX_LEN:
+            raise ValueError(
+                f"API frame length {total_len} exceeds safe max {STM_FW_API_SAFE_MAX_LEN}"
+            )
+        frame = bytearray(total_len)
+        frame[0] = STM_FW_API_PKT_TYPE
+        frame[1] = total_len & 0xFF
+        frame[2] = (total_len >> 8) & 0xFF
+        seq = self._next_seq()
+        frame[3] = seq & 0xFF
+        frame[4] = (seq >> 8) & 0xFF
+        frame[5] = STM_FW_API_FUNC
+        frame[6] = 0x00
+        frame[7] = 0x00
+        frame[8] = ((subop & 0x0F) << 4) | STM_FW_CTRL_TYPE_DISPLAY
+        frame[9:] = payload
+        return bytes(frame)
+
+    def _prepare_wire_frame(self, frame: bytes, wire_len: int = 0) -> bytes:
+        if not self.use_usb_wire_valid_lengths:
+            if wire_len > 0 and int(wire_len) > len(frame):
+                return frame + bytes(int(wire_len) - len(frame))
+            return frame
+
+        target_wire_len = int(wire_len or 0)
+        base_pad = int(getattr(self._base, "pad_fw_writes_to_bytes", 0) or 0)
+        if base_pad > target_wire_len:
+            target_wire_len = base_pad
+        if target_wire_len < len(frame):
+            target_wire_len = len(frame)
+        if target_wire_len > STM_FW_API_SAFE_WIRE_LEN:
+            raise ValueError(
+                f"USB wire length {target_wire_len} exceeds safe API wire length "
+                f"{STM_FW_API_SAFE_WIRE_LEN}"
+            )
+
+        declared_len = target_wire_len
+        base_declared_len = int(getattr(self._base, "declare_fw_writes_as_bytes", 0) or 0)
+        if base_declared_len > 0:
+            declared_len = base_declared_len
+        if declared_len < len(frame):
+            raise ValueError(
+                f"USB declared API length {declared_len} is smaller than unpadded "
+                f"frame length {len(frame)}"
+            )
+        if declared_len > target_wire_len:
+            raise ValueError(
+                f"USB declared API length {declared_len} exceeds wire length {target_wire_len}"
+            )
+
+        wire = bytearray(frame)
+        wire[1] = declared_len & 0xFF
+        wire[2] = (declared_len >> 8) & 0xFF
+        if target_wire_len > len(wire):
+            wire.extend(bytes(target_wire_len - len(wire)))
+        return bytes(wire)
+
+    def _next_seq(self) -> int:
+        if self._seq_mode == STM_FW_SEQ_FIXED:
+            return self._fixed_seq
+        if self._seq_mode == STM_FW_SEQ_UINT8_WRAP:
+            seq = self._seq & 0xFF
+            self._seq = (seq + 1) & 0xFF
+            return seq
+
+        seq = self._seq & 0xFFFF
+        while seq == 0 or (seq & 0xFF) >= 0xFD:
+            seq = (seq + 1) & 0xFFFF
+            if seq == 0:
+                seq = 1
+        self._seq = (seq + 1) & 0xFFFF
+        if self._seq == 0:
+            self._seq = 1
+        return seq
+
+    def _roundtrip_control(self, subop: int, payload: bytes = b"") -> bytes:
+        frame = self._build_api_frame(subop, payload)
+        wire = self._prepare_wire_frame(frame)
+        if self.use_usb_wire_valid_lengths:
+            declared_len = wire[1] | (wire[2] << 8)
+            self._log(
+                f"{self._subop_name(subop)} TX: {_hex_preview(wire)} "
+                f"[api_len={declared_len} wire_len={len(wire)} unpadded_len={len(frame)}]"
+            )
+        else:
+            self._log(f"{self._subop_name(subop)} TX: {_hex_preview(frame)}")
+        self._base.sendall(wire)
+        return self._read_api_frame()
+
+    def _read_api_frame(self) -> bytes:
+        hdr = self._recv_exact(3)
+        total_len = hdr[1] | (hdr[2] << 8)
+        if total_len < 3:
+            raise RuntimeError(f"Bad STM API frame length: {total_len}")
+        rest = self._recv_exact(total_len - 3)
+        frame = hdr + rest
+        if len(frame) < 9:
+            raise RuntimeError(f"STM API frame too short: {len(frame)} bytes")
+        discard_padding = getattr(self._base, "discard_zero_padding", None)
+        if callable(discard_padding):
+            discard_padding()
+        return frame
+
+    def _recv_exact(self, n: int) -> bytes:
+        buf = bytearray()
+        while len(buf) < n:
+            chunk = self._base.recv(n - len(buf))
+            if not chunk:
+                raise ConnectionError(f"{self._transport_name} closed by peer")
+            buf.extend(chunk)
+        return bytes(buf)
+
+    @staticmethod
+    def _subop_name(subop: int) -> str:
+        return {
+            STM_FW_API_START: "API_ESP_FW_START",
+            STM_FW_API_END: "API_ESP_FW_END",
+            STM_FW_API_WRITE: "API_ESP_FW_WRITE",
+            STM_FW_API_USB_FORCE_FS: "API_ESP_FW_USB_FORCE_FS",
+            STM_FW_API_USB_RESTORE_HS: "API_ESP_FW_USB_RESTORE_HS",
+        }.get(subop, f"API_SUBOP_0x{subop:02X}")
+
+
 class ESPFlasher:
     """
-    Drives the ESP32 ROM bootloader flash protocol over a TCP socket.
+    Drives the ESP32 ROM bootloader flash protocol over a byte-stream transport.
 
-    The TCP socket connects to the STM H7, which transparently bridges
-    bytes to/from the ESP UART.
+    The transport may be a raw bridge or an STM API wrapper, but by the time
+    bytes reach this class they behave like a raw ESP SLIP stream.
 
     Step verification:
         Set *step_gate* to a threading.Event. After each protocol step,
@@ -307,13 +617,17 @@ class ESPFlasher:
 
     def __init__(
         self,
-        sock: socket.socket,
+        sock: BridgeTransport,
         log: Callable[[str], None] | None = None,
         progress: Callable[[float, str], None] | None = None,
         step_gate: threading.Event | None = None,
-        cmd_timeout: float = 1.5,  # Default base timeout for quick command replies
+        cmd_timeout: float = STM_FW_FIRST_RESP_TIMEOUT,  # Base timeout for quick command replies
         on_retry_prompt: Callable[[str, str], bool] | None = None,  # (step_name, details) -> should_retry
         trace: Callable[[dict], None] | None = None,
+        transport_name: str = "bridge",
+        on_baud_change: Callable[[int], None] | None = None,
+        flash_block_size: int = FLASH_BLOCK_SIZE,
+        flash_data_pace_sec: float = 0.0,
     ):
         self.sock = sock
         self._log = log or (lambda s: None)
@@ -323,11 +637,15 @@ class ESPFlasher:
         self._cancel = threading.Event()
         # Step-by-step verification gate
         self._step_gate = step_gate        # wait on this after each step
-        self.auto_mode = False             # when True, skip gate waits
+        self.auto_mode = step_gate is None  # when True, skip gate waits and reduce chatter
         self._cmd_timeout = cmd_timeout    # command reply timeout
         self._on_retry_prompt = on_retry_prompt  # callback for retry prompts
         self._trace = trace or (lambda event: None)
         self._cmd_seq = 0
+        self._transport_name = transport_name
+        self._on_baud_change = on_baud_change
+        self._flash_block_size = max(1, int(flash_block_size))
+        self._flash_data_pace_sec = max(0.0, float(flash_data_pace_sec))
 
     def cancel(self):
         self._cancel.set()
@@ -374,18 +692,20 @@ class ESPFlasher:
     # ── Low-level transport ───────────────────────────────────────────────
 
     def _send_raw(self, data: bytes):
-        """Send raw bytes over the socket."""
+        """Send raw bytes over the transport."""
         self.sock.sendall(data)
 
     def _recv_raw(self, timeout: float) -> bytes:
-        """Receive available bytes from socket within *timeout* seconds."""
+        """Receive available bytes from transport within *timeout* seconds."""
         self.sock.settimeout(timeout)
         try:
             data = self.sock.recv(4096)
             if not data:
-                raise ConnectionError("Socket closed by peer")
+                raise ConnectionError(f"{self._transport_name} closed by peer")
             return data
-        except socket.timeout:
+        except (StmEspFwRemoteTimeout, StmEspFwRemoteReject):
+            raise
+        except (socket.timeout, TimeoutError):
             return b""
 
     def _send_slip(self, data: bytes):
@@ -403,7 +723,13 @@ class ESPFlasher:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
-            chunk = self._recv_raw(min(remaining, 0.1))
+            read_timeout = remaining if isinstance(self.sock, StmEspFwApiTransport) else min(remaining, 0.1)
+            try:
+                chunk = self._recv_raw(read_timeout)
+            except StmEspFwRemoteTimeout:
+                return b"\xFF"
+            except StmEspFwRemoteReject:
+                return b"\xFE"
             if chunk:
                 self._rx_buf.extend(chunk)
             # Try to extract a complete SLIP packet
@@ -430,7 +756,7 @@ class ESPFlasher:
     # ── Command execution ─────────────────────────────────────────────────
 
     def cmd(self, op: int, payload: bytes = b"", checksum: int = 0,
-            timeout: float | None = None) -> tuple[bool, int, bytes]:
+            timeout: float | None = None, quiet: bool = False) -> tuple[bool, int, bytes]:
         """
         Send command and wait for matching response.
         Returns (ok, value, raw_response).
@@ -445,20 +771,22 @@ class ESPFlasher:
         start_time = time.monotonic()
         self._cmd_seq += 1
         cmd_id = self._cmd_seq
-        self._log(f"  TX {op_name}: {_hex_preview(slip_frame)}  [timeout={_fmt_ms(timeout)}]")
+        if not quiet:
+            self._log(f"  TX {op_name}: {_hex_preview(slip_frame)}  [timeout={_fmt_ms(timeout)}]")
+        if not quiet:
+            self._emit_trace({
+                "kind": "TX",
+                "cmd_id": cmd_id,
+                "op": op,
+                "op_name": op_name,
+                "timeout_s": timeout,
+                "checksum": checksum,
+                "packet_len": len(pkt),
+                "wire_len": len(slip_frame),
+                "packet_hex": _hex_full(pkt),
+                "wire_hex": _hex_full(slip_frame),
+            })
         self._send_raw(slip_frame)
-        self._emit_trace({
-            "kind": "TX",
-            "cmd_id": cmd_id,
-            "op": op,
-            "op_name": op_name,
-            "timeout_s": timeout,
-            "checksum": checksum,
-            "packet_len": len(pkt),
-            "wire_len": len(slip_frame),
-            "packet_hex": _hex_full(pkt),
-            "wire_hex": _hex_full(slip_frame),
-        })
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -467,22 +795,54 @@ class ESPFlasher:
             resp = self._recv_slip_packet(min(remaining, 0.5))
             if resp is None:
                 continue
+            if resp == b"\xFF":
+                elapsed = time.monotonic() - start_time
+                self._log(f"  RX {op_name} after {_fmt_ms(elapsed)}: STM reported ESP response timeout")
+                self._emit_trace({
+                    "kind": "REMOTE_TIMEOUT",
+                    "cmd_id": cmd_id,
+                    "op": op,
+                    "op_name": op_name,
+                    "elapsed_s": elapsed,
+                    "timeout_s": timeout,
+                })
+                return False, 0, b""
+            if resp == b"\xFE":
+                elapsed = time.monotonic() - start_time
+                api_len = STM_FW_API_WRITE_OVERHEAD + len(slip_frame)
+                self._log(
+                    f"  RX {op_name} after {_fmt_ms(elapsed)}: STM rejected ESP FW write request "
+                    f"(api_len={api_len}, slip_len={len(slip_frame)}, pkt_len={len(pkt)})"
+                )
+                self._emit_trace({
+                    "kind": "REMOTE_REJECT",
+                    "cmd_id": cmd_id,
+                    "op": op,
+                    "op_name": op_name,
+                    "elapsed_s": elapsed,
+                    "timeout_s": timeout,
+                    "api_len": api_len,
+                    "slip_len": len(slip_frame),
+                    "packet_len": len(pkt),
+                })
+                return False, 0, b""
             elapsed = time.monotonic() - start_time
-            self._log(f"  RX {op_name} after {_fmt_ms(elapsed)}: {_hex_preview(resp)}")
             ok, value, raw = parse_response(resp, op)
-            self._emit_trace({
-                "kind": "RX",
-                "cmd_id": cmd_id,
-                "op": op,
-                "op_name": op_name,
-                "elapsed_s": elapsed,
-                "response_ok": ok,
-                "value": value,
-                "packet_len": len(resp),
-                "wire_len": len(slip_encode(resp)),
-                "packet_hex": _hex_full(resp),
-                "wire_hex": _hex_full(slip_encode(resp)),
-            })
+            if not quiet or not ok:
+                self._log(f"  RX {op_name} after {_fmt_ms(elapsed)}: {_hex_preview(resp)}")
+                self._emit_trace({
+                    "kind": "RX",
+                    "cmd_id": cmd_id,
+                    "op": op,
+                    "op_name": op_name,
+                    "elapsed_s": elapsed,
+                    "response_ok": ok,
+                    "value": value,
+                    "packet_len": len(resp),
+                    "wire_len": len(slip_encode(resp)),
+                    "packet_hex": _hex_full(resp),
+                    "wire_hex": _hex_full(slip_encode(resp)),
+                })
             if resp[0:1] == b'\x01' and len(resp) >= 2 and resp[1] == op:
                 return ok, value, raw
         self._log(f"  TIMEOUT {op_name} after {_fmt_ms(timeout)}")
@@ -512,7 +872,7 @@ class ESPFlasher:
             self._check_cancel()
             attempt_count += 1
             self._log(f"  SYNC attempt {attempt_count}")
-            ok, _, raw = self.cmd(OP_SYNC, sync_payload, timeout=self._timeout_for_step(1.5))
+            ok, _, raw = self.cmd(OP_SYNC, sync_payload, timeout=self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT))
             if ok:
                 self._log("  SYNC OK — bootloader responded")
                 # Flush extra sync responses
@@ -522,7 +882,7 @@ class ESPFlasher:
                     while True:
                         self.sock.settimeout(0.05)
                         self.sock.recv(4096)
-                except socket.timeout:
+                except (socket.timeout, TimeoutError):
                     pass
                 self._wait_gate("SYNC complete",
                                 "Bootloader responded to SYNC. Ready to detect chip.")
@@ -534,7 +894,7 @@ class ESPFlasher:
                       f"Check:\n"
                       f"• ESP is in download mode (GPIO0 low, reset)\n"
                       f"• UART connection is correct\n"
-                      f"• Bridge is active on port 5003\n\n"
+                      f"• {self._transport_name} bridge path is active\n\n"
                       f"Press YES to retry immediately")
             if self._prompt_retry("SYNC Failed", detail):
                 self._log(f"  User chose to retry SYNC (attempt {attempt_count + 1})")
@@ -547,7 +907,7 @@ class ESPFlasher:
         """Read chip ID from ROM address 0x40001000."""
         self._log("Step 2: READ_REG — detect chip ID @ 0x40001000")
         payload = struct.pack("<I", 0x40001000)
-        read_timeout = self._timeout_for_step(1.5)
+        read_timeout = self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT)
 
         while True:
             ok, value, raw = self.cmd(OP_READ_REG, payload, timeout=read_timeout)
@@ -579,11 +939,14 @@ class ESPFlasher:
 
         self._log(f"Step 3: CHANGE_BAUD — request {baud} baud")
         payload = struct.pack("<II", baud, 0)
-        baud_timeout = self._timeout_for_step(1.5)
+        baud_timeout = self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT)
         while True:
             ok, _, raw = self.cmd(OP_CHANGE_BAUDRATE, payload, timeout=baud_timeout)
             if ok:
                 self._log(f"  CHANGE_BAUD OK — ESP ROM acknowledged {baud}")
+                if self._on_baud_change is not None:
+                    self._on_baud_change(baud)
+                    self._log(f"  STM FW API baud updated to {baud}")
                 self._wait_gate("CHANGE_BAUD complete",
                                 f"Requested baud: {baud}\n"
                                 f"TX: {_hex_preview(payload)}\n"
@@ -608,7 +971,7 @@ class ESPFlasher:
 
         self._log("SPI_ATTACH — attach SPI flash")
         payload = struct.pack("<II", 0, 0)
-        attach_timeout = self._timeout_for_step(1.5)
+        attach_timeout = self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT)
         while True:
             ok, _, raw = self.cmd(OP_SPI_ATTACH, payload, timeout=attach_timeout)
             if ok:
@@ -625,7 +988,7 @@ class ESPFlasher:
 
         self._log("SPI_SET_PARAMS — flash geometry (4MB, 64K/4K/256)")
         params = struct.pack("<6I", 0, 4 * 1024 * 1024, 65536, 4096, 256, 0xFFFF)
-        params_timeout = self._timeout_for_step(1.5)
+        params_timeout = self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT)
         while True:
             ok, _, raw = self.cmd(OP_SPI_SET_PARAMS, params, timeout=params_timeout)
             if ok:
@@ -681,7 +1044,24 @@ class ESPFlasher:
         data_timeout = self._timeout_for_step(5.0, scale=5.0)
 
         while True:
-            ok, _, raw = self.cmd(OP_FLASH_DATA, block, checksum=cs, timeout=data_timeout)
+            try:
+                ok, _, raw = self.cmd(
+                    OP_FLASH_DATA,
+                    block,
+                    checksum=cs,
+                    timeout=data_timeout,
+                    quiet=self.auto_mode,
+                )
+            except (ConnectionError, OSError) as exc:
+                detail = (f"Host transport error while sending FLASH_DATA block {seq}.\n\n"
+                          f"{exc}\n\n"
+                          f"Writing {len(data)} bytes\n"
+                          f"Checksum: 0x{cs:02X}\n\n"
+                          "Press YES to retry this same block.")
+                if self._prompt_retry(f"FLASH_DATA Block {seq} Transport Error", detail):
+                    self._log(f"  User chose to retry FLASH_DATA block {seq} after transport error")
+                    continue
+                raise
             if ok:
                 return True, raw
             # Failed - prompt retry
@@ -701,7 +1081,7 @@ class ESPFlasher:
         flag = 0 if reboot else 1  # 0=reboot, 1=stay in bootloader
         self._log(f"FLASH_END (reboot={'yes' if reboot else 'no'})")
         payload = struct.pack("<I", flag)
-        ok, _, raw = self.cmd(OP_FLASH_END, payload, timeout=self._timeout_for_step(1.5))
+        ok, _, raw = self.cmd(OP_FLASH_END, payload, timeout=self._timeout_for_step(STM_FW_FIRST_RESP_TIMEOUT))
         if not ok:
             self._log("  WARNING: FLASH_END response not OK (may still be fine)")
         else:
@@ -720,25 +1100,28 @@ class ESPFlasher:
         *flash_baud*    target ESP ROM baud after CHANGE_BAUD_RATE
         """
         size = len(firmware)
-        num_blocks = (size + FLASH_BLOCK_SIZE - 1) // FLASH_BLOCK_SIZE
+        block_size = self._flash_block_size
+        num_blocks = (size + block_size - 1) // block_size
 
         fp_mode = (flash_params >> 8) & 0xFF
         fp_sf   = flash_params & 0xFF
         self._log(f"Flash params: 0x{flash_params:04X} "
                   f"(mode=0x{fp_mode:02X}, size|freq=0x{fp_sf:02X})")
         self._log(f"Flash baud: {flash_baud}")
-        self._log(f"Flashing {size} bytes ({num_blocks} blocks) to 0x{flash_offset:X}")
+        self._log(f"Flashing {size} bytes ({num_blocks} blocks of {block_size}) to 0x{flash_offset:X}")
         self._progress(0.0, f"Erasing {num_blocks} blocks...")
 
-        self.flash_begin(size, num_blocks, FLASH_BLOCK_SIZE, flash_offset)
+        self.flash_begin(size, num_blocks, block_size, flash_offset)
 
         bla = CHIP_BLA.get(self.chip_id, 0x1000)
         self._log(f"FLASH_DATA — writing {num_blocks} blocks...")
+        auto_progress_interval = max(1, (num_blocks + AUTO_FLASH_DATA_PROGRESS_MAX_UPDATES - 1)
+                                     // AUTO_FLASH_DATA_PROGRESS_MAX_UPDATES)
 
         for seq in range(num_blocks):
             self._check_cancel()
-            start = seq * FLASH_BLOCK_SIZE
-            chunk = firmware[start:start + FLASH_BLOCK_SIZE]
+            start = seq * block_size
+            chunk = firmware[start:start + block_size]
 
             # Patch flash params into first block if this is the bootloader area
             patched = False
@@ -755,23 +1138,29 @@ class ESPFlasher:
             ok, raw = self.flash_data(chunk, seq)
 
             pct = (seq + 1) / num_blocks
-            self._progress(pct, f"Block {seq + 1}/{num_blocks}")
+            if (not self.auto_mode or (seq + 1) % auto_progress_interval == 0
+                    or seq + 1 == num_blocks):
+                self._progress(pct, f"Block {seq + 1}/{num_blocks}")
 
-            # Log every block for step-by-step, or every 16th for auto
-            if not self.auto_mode or (seq + 1) % 16 == 0 or seq + 1 == num_blocks:
+            if (not self.auto_mode or (seq + 1) % AUTO_FLASH_DATA_LOG_INTERVAL == 0
+                    or seq + 1 == num_blocks):
                 self._log(f"  Block {seq + 1}/{num_blocks} OK  "
                           f"(offset=0x{flash_offset + start:X}, "
                           f"{len(chunk)} bytes, cs=0x{esp_checksum(chunk):02X})")
 
-            detail = (f"Block {seq + 1}/{num_blocks}\n"
-                      f"Flash addr: 0x{flash_offset + start:X}\n"
-                      f"Size: {len(chunk)} bytes\n"
-                      f"Checksum: 0x{esp_checksum(chunk):02X}\n"
-                      f"Data[0:16]: {_hex_preview(chunk, 16)}\n"
-                      f"RX: {_hex_preview(raw)}")
-            if patched:
-                detail += "\n** Flash params patched in this block **"
-            self._wait_gate(f"FLASH_DATA block {seq + 1}/{num_blocks}", detail)
+            if self._step_gate is not None and not self.auto_mode:
+                detail = (f"Block {seq + 1}/{num_blocks}\n"
+                          f"Flash addr: 0x{flash_offset + start:X}\n"
+                          f"Size: {len(chunk)} bytes\n"
+                          f"Checksum: 0x{esp_checksum(chunk):02X}\n"
+                          f"Data[0:16]: {_hex_preview(chunk, 16)}\n"
+                          f"RX: {_hex_preview(raw)}")
+                if patched:
+                    detail += "\n** Flash params patched in this block **"
+                self._wait_gate(f"FLASH_DATA block {seq + 1}/{num_blocks}", detail)
+
+            if self._flash_data_pace_sec > 0.0 and seq + 1 < num_blocks:
+                time.sleep(self._flash_data_pace_sec)
 
         self._log("  All blocks written.")
 
@@ -785,7 +1174,7 @@ class ESPFlasher:
 # ── Convenience: full flash sequence ──────────────────────────────────────────
 
 def flash_esp_over_bridge(
-    sock: socket.socket,
+    sock: BridgeTransport,
     firmware: bytes,
     flash_offset: int = 0x10000,
     flash_params: int = 0x0220,
@@ -796,7 +1185,7 @@ def flash_esp_over_bridge(
     step_gate: threading.Event | None = None,
 ):
     """
-    Run the full ESP flash sequence over an already-connected socket
+    Run the full ESP flash sequence over an already-connected bridge transport
     (STM is assumed to be in UART bridge mode already).
 
     Sequence (matches esputil):

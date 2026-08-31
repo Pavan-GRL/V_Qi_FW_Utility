@@ -5,23 +5,59 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import queue
 import socket
+import struct
 import threading
+import time
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Optional
 import traceback
 
 from net_client import NetClient
-from usb_client import USBClient, HAS_USB
+from usb_client import (
+    USBClient,
+    USBFlashBridge,
+    HAS_USB,
+    USB_VID,
+    USB_PID,
+    USB_FW_WRITE_TIMEOUT_MS_DEFAULT,
+    USB_HS_OUT_PAD_BYTES,
+)
 from logger import LOG_DIR, append_text
-from protocol import hex_dump_multiline
+from protocol import hex_dump_multiline, hex_dump_spaces
 from ui_plot import PlotPanel
 from udp_fsk import FSKReceiver
 from udp_fsk_r2 import FSKR2Receiver
 from esp_flasher import (
     ESPFlasher,
+    CHIP_BLA,
     CHIP_NAMES,
+    CHIP_ESP32S3,
     DEFAULT_FLASH_BAUD,
+    FLASH_BLOCK_SIZE,
+    OP_FLASH_BEGIN,
+    OP_FLASH_DATA,
+    OP_FLASH_END,
+    OP_READ_REG,
+    OP_SPI_ATTACH,
+    OP_SPI_SET_PARAMS,
+    OP_SYNC,
+    STM_FW_START_SETTLE_SEC,
+    STM_FW_API_END,
+    STM_FW_API_FUNC,
+    STM_FW_API_PKT_TYPE,
+    STM_FW_API_SAFE_MAX_LEN,
+    STM_FW_API_SAFE_WIRE_LEN,
+    STM_FW_API_START,
+    STM_FW_API_WRITE,
+    STM_FW_CTRL_TYPE_DISPLAY,
+    STM_FW_SEQ_UINT8_WRAP,
+    StmEspFwApiTransport,
+    USB_FLASH_DATA_BLOCK_SIZE,
+    USB_FLASH_DATA_PACE_SEC,
+    build_cmd,
+    esp_checksum,
     format_fw_update_plan,
+    slip_encode,
 )
 from cps_fw_updater import (
     CpsFwUpdater,
@@ -39,6 +75,17 @@ from cps_fw_updater import (
     state_name as cps_state_name,
 )
 from project_paths import LOGS_DIR, ensure_dir, resource_path
+from stm_dfu import (
+    HAS_USB as STM_DFU_HAS_USB,
+    INACTIVE_BANK_BASE,
+    PINGPONG_CM4_OFFSET,
+    PINGPONG_MAX_IMAGE_SIZE,
+    StmDfuDeviceInfo,
+    StmDfuSession,
+    cubeprogrammer_flash_inactive_bank,
+    enumerate_dfu_devices,
+    find_cubeprogrammer_cli,
+)
 
 
 # ── GRL Brand Colors ──────────────────────────────────────────────────────────
@@ -53,8 +100,9 @@ _C_TEXT_DIM  = "#4A4A4A"   # dimmed text
 
 
 PORT_DEFAULT = 5002
-
 CPS_API_PORT_DEFAULT = PORT_DEFAULT
+STM_FW_CTRL_TYPE_CONTROLLER = 0x01
+STM_FW_API_CONTROLLER_ENTER_ROM_DFU = 0x02
 _CPS_BOOT_HEX_DEFAULT = (
     r"D:\V_QI\CPS\FW_Donwload\03_CPS4041_Bootloader\CPS4041_BL_V0.1.hex"
 )
@@ -280,6 +328,7 @@ class App(tk.Tk):
         self.title("GRL_V_QI_UTILITY")
         self.geometry("1250x780")
         self._apply_theme()
+        self.protocol("WM_DELETE_WINDOW", self._on_app_close)
 
         # Set window/taskbar icon
         try:
@@ -291,20 +340,18 @@ class App(tk.Tk):
         self.ui_q: "queue.Queue[tuple[str, object]]" = queue.Queue()
         self.client: "NetClient | USBClient | None" = None
         self.conn_type_var = tk.StringVar(value="Ethernet")
+        self._usb_vid_var = tk.StringVar(value=f"0x{USB_VID:04X}")
+        self._usb_pid_var = tk.StringVar(value=f"0x{USB_PID:04X}")
+        self._usb_fw_pad_var = tk.StringVar(value=str(USB_HS_OUT_PAD_BYTES))
         self._fw_log_lock = threading.Lock()
         self._fw_log_file: str | None = None
+        self._runtime_api_block_owner: str | None = None
 
         # ---- Logo images (keep references to prevent GC) ----
-        self._logo_img = None       # top-bar logo
         self._watermark_img = None  # faded centred watermark for TX/RX
         try:
             from PIL import Image, ImageTk, ImageEnhance
             _raw = Image.open(resource_path("assets", "grl_logo.png")).convert("RGBA")
-
-            # Logo for top bar (80px height)
-            _h = 80
-            _w = int(_raw.width * _h / _raw.height)
-            self._logo_img = ImageTk.PhotoImage(_raw.resize((_w, _h), Image.LANCZOS))
 
             # Watermark: larger, faded (~12% opacity)
             _wh = 200
@@ -321,13 +368,6 @@ class App(tk.Tk):
         # ---------------- Top bar (navy blue) ----------------
         top = ttk.Frame(self, style="TopBar.TFrame")
         top.pack(side=tk.TOP, fill=tk.X, padx=0, pady=0)
-
-        # Logo badge on the far right with white background for visibility
-        if self._logo_img is not None:
-            logo_frame = tk.Frame(top, bg=_C_WHITE, relief=tk.FLAT, bd=2)
-            logo_frame.pack(side=tk.RIGHT, padx=8, pady=4)
-            tk.Label(logo_frame, image=self._logo_img,
-                     bg=_C_WHITE, bd=0, padx=8, pady=4).pack()
 
         # ── Connection type selector ──────────────────────────────────────────
         # Style for TopBar radio buttons (white text on navy, toggles on select)
@@ -348,7 +388,21 @@ class App(tk.Tk):
         self.rb_usb = ttk.Radiobutton(
             top, text="USB", variable=self.conn_type_var, value="USB",
             style="TopBar.TRadiobutton", command=self._on_conn_type_change)
-        self.rb_usb.pack(side=tk.LEFT, padx=(4, 10), pady=8)
+        self.rb_usb.pack(side=tk.LEFT, padx=(4, 8), pady=8)
+
+        self._usb_vid_lbl = ttk.Label(top, text="VID:", style="TopBar.TLabel")
+        self._usb_vid_entry = ttk.Entry(
+            top, textvariable=self._usb_vid_var, width=7, style="TopBar.TEntry"
+        )
+        self._usb_pid_lbl = ttk.Label(top, text="PID:", style="TopBar.TLabel")
+        self._usb_pid_entry = ttk.Entry(
+            top, textvariable=self._usb_pid_var, width=7, style="TopBar.TEntry"
+        )
+        self._usb_fw_pad_lbl = ttk.Label(top, text="USB FW wire:", style="TopBar.TLabel")
+        self._usb_fw_pad_entry = ttk.Entry(
+            top, textvariable=self._usb_fw_pad_var, width=6, style="TopBar.TEntry"
+        )
+        self._usb_fw_pad_suffix = ttk.Label(top, text="B", style="TopBar.TLabel")
 
         # ── Ethernet IP / Port ────────────────────────────────────────────────
         self._eth_lbl_ip = ttk.Label(top, text="IP:", style="TopBar.TLabel")
@@ -385,7 +439,7 @@ class App(tk.Tk):
         nb.add(self.tab_stream, text="Console")
 
         self.tab_plot = ttk.Frame(nb)
-        nb.add(self.tab_plot, text="Plot")
+        nb.add(self.tab_plot, text="Streamer Data")
 
         # ---------------- Console tab (left: controls, right: TX/RX) --------
         console_wrap = ttk.Frame(self.tab_stream)
@@ -586,14 +640,51 @@ class App(tk.Tk):
         self.btn_plot_stop = ttk.Button(plot_ctrl, text="Stop", command=self._plot_stop, state=tk.DISABLED)
         self.btn_plot_stop.pack(side=tk.LEFT)
 
+        self._new_streamer_var = tk.BooleanVar(value=False)
+        self._new_streamer_check = ttk.Checkbutton(
+            plot_ctrl,
+            text="Use new streamer implementation",
+            variable=self._new_streamer_var,
+        )
+        self._new_streamer_check.pack(side=tk.LEFT, padx=(14, 0))
+
+        self._reassemble_streamer_var = tk.BooleanVar(value=False)
+        self._reassemble_streamer_check = ttk.Checkbutton(
+            plot_ctrl,
+            text="Join split ASCII messages",
+            variable=self._reassemble_streamer_var,
+        )
+        self._reassemble_streamer_check.pack(side=tk.LEFT, padx=(14, 0))
+
+        self._raw_counts_var = tk.BooleanVar(value=False)
+        self._raw_counts_check = ttk.Checkbutton(
+            plot_ctrl,
+            text="Read raw Vrect/Irect counts (Calibration mode)",
+            variable=self._raw_counts_var,
+            command=self._toggle_raw_counts,
+        )
+        self._raw_counts_check.pack(side=tk.LEFT, padx=(14, 0))
+
         self._plot_paused = False   # True when Pause was pressed (not fully stopped)
 
         plot_wrap = ttk.Frame(self.tab_plot)
         plot_wrap.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        # Left: decoded packet blocks
+        # Left: decoded packet blocks + click details
         pkt_frame = ttk.LabelFrame(plot_wrap, text="CPS Packet List (click first line to highlight on plot)")
         pkt_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 8), pady=6)
+
+        self._pkt_detail_var = tk.StringVar(
+            value="Click a packet to view rectified voltage/current and timestamps."
+        )
+        pkt_detail = ttk.LabelFrame(pkt_frame, text="Selected Packet Details")
+        pkt_detail.pack(side=tk.TOP, fill=tk.X, padx=6, pady=(6, 0))
+        ttk.Label(
+            pkt_detail,
+            textvariable=self._pkt_detail_var,
+            justify=tk.LEFT,
+            anchor="w",
+        ).pack(side=tk.TOP, fill=tk.X, padx=8, pady=8)
 
         self._pkt_vsb = ttk.Scrollbar(pkt_frame, orient=tk.VERTICAL)
         pkt_hsb = ttk.Scrollbar(pkt_frame, orient=tk.HORIZONTAL)
@@ -612,6 +703,7 @@ class App(tk.Tk):
 
         # map: tag -> timestamp(ms)
         self._pkt_tag_to_ts: dict[str, int] = {}
+        self._pkt_tag_to_details: dict[str, str] = {}
         self._pkt_counter = 0
         self._pkt_autoscroll = True  # False when user has scrolled up
         self.plot_pkt_text.bind("<Button-1>", self.on_packet_text_click)
@@ -645,6 +737,11 @@ class App(tk.Tk):
         nb.add(self.tab_cps_fw, text="CPS FW upd")
         self._build_cps_fw_tab()
 
+        # ---------------- STM DFU tab ----------------
+        self.tab_stm_dfu = ttk.Frame(nb)
+        nb.add(self.tab_stm_dfu, text="STM DFU")
+        self._build_stm_dfu_tab()
+
         # UI loop
         self.after(50, self.process_ui_queue)
 
@@ -660,15 +757,23 @@ class App(tk.Tk):
                 messagebox.showerror(
                     "pyusb not installed",
                     "USB support requires pyusb.\n\nInstall it with:\n  pip install pyusb\n\n"
-                    "Also ensure the WinUSB driver is installed for VID_227F/PID_0006.",
+                    "Also ensure a libusb-compatible driver is installed for the selected VID/PID.",
                 )
+                return
+            try:
+                usb_vid, usb_pid = self._usb_vid_pid()
+            except ValueError as exc:
+                messagebox.showerror("USB", str(exc))
                 return
             self.client = USBClient(
                 on_status=lambda msg: self.ui_q.put(("status", msg)),
                 on_cps=lambda info: self.ui_q.put(("cps", info)),
+                on_raw_counts=lambda info: self.ui_q.put(("raw_counts", info)),
                 on_tx=lambda hexs, tag: self.ui_q.put(("tx", (hexs, tag))),
                 on_rx=lambda hexs, tag: self.ui_q.put(("rx", (hexs, tag))),
                 on_retry_prompt=self._retry_prompt_dialog,
+                vid=usb_vid,
+                pid=usb_pid,
             )
         else:
             ip   = self.ip_var.get().strip()
@@ -678,13 +783,22 @@ class App(tk.Tk):
                 port=port,
                 on_status=lambda msg: self.ui_q.put(("status", msg)),
                 on_cps=lambda info: self.ui_q.put(("cps", info)),
+                on_raw_counts=lambda info: self.ui_q.put(("raw_counts", info)),
                 on_tx=lambda hexs, tag: self.ui_q.put(("tx", (hexs, tag))),
                 on_rx=lambda hexs, tag: self.ui_q.put(("rx", (hexs, tag))),
                 on_retry_prompt=self._retry_prompt_dialog,
             )
 
         self.client.plot_enabled = False   # Start/Pause/Stop buttons control this
-        self.client.start()
+        self.client.raw_counts_enabled = self._raw_counts_var.get()
+        try:
+            self.client.start()
+        except Exception as exc:
+            self.client = None
+            self.status_var.set("Connection startup failed")
+            self._txrx_line(f"{host_ts_short()}  Connection startup failed: {exc}")
+            messagebox.showerror("Connection failed", str(exc))
+            return
 
         self.btn_connect.configure(state=tk.DISABLED)
         self.btn_disconnect.configure(state=tk.NORMAL)
@@ -706,15 +820,168 @@ class App(tk.Tk):
         self.rb_usb.configure(state=tk.NORMAL)
         self.status_var.set("Disconnected")
 
+    def _on_app_close(self):
+        if self.client:
+            self.client.stop()  # stop() sends streamer OFF before closing the transport
+            self.client = None
+        self.destroy()
+
     # ---------------- Connection type helpers ----------------
 
     def _on_conn_type_change(self):
         """Show/hide the USB Control Transfer panel and IP/Port fields."""
         is_usb = self.conn_type_var.get() == "USB"
         if is_usb:
+            self._usb_vid_lbl.pack(side=tk.LEFT, padx=(0, 4), pady=8)
+            self._usb_vid_entry.pack(side=tk.LEFT, padx=(0, 8), pady=8)
+            self._usb_pid_lbl.pack(side=tk.LEFT, padx=(0, 4), pady=8)
+            self._usb_pid_entry.pack(side=tk.LEFT, padx=(0, 8), pady=8)
+            self._usb_fw_pad_lbl.pack(side=tk.LEFT, padx=(0, 4), pady=8)
+            self._usb_fw_pad_entry.pack(side=tk.LEFT, padx=(0, 2), pady=8)
+            self._usb_fw_pad_suffix.pack(side=tk.LEFT, padx=(0, 10), pady=8)
             self._usb_ctrl_lf.pack(side=tk.TOP, fill=tk.X, padx=6, pady=4)
         else:
+            self._usb_vid_lbl.pack_forget()
+            self._usb_vid_entry.pack_forget()
+            self._usb_pid_lbl.pack_forget()
+            self._usb_pid_entry.pack_forget()
+            self._usb_fw_pad_lbl.pack_forget()
+            self._usb_fw_pad_entry.pack_forget()
+            self._usb_fw_pad_suffix.pack_forget()
             self._usb_ctrl_lf.pack_forget()
+
+    def _usb_vid_pid(self) -> tuple[int, int]:
+        try:
+            vid = int(self._usb_vid_var.get().strip(), 0)
+            pid = int(self._usb_pid_var.get().strip(), 0)
+        except Exception as exc:
+            raise ValueError("USB VID/PID must be integers, for example 0x3985 and 0x0007") from exc
+        if not (0 <= vid <= 0xFFFF and 0 <= pid <= 0xFFFF):
+            raise ValueError("USB VID/PID must be between 0x0000 and 0xFFFF")
+        return vid, pid
+
+    def _usb_fw_pad_bytes(self) -> int:
+        try:
+            pad = int(self._usb_fw_pad_var.get().strip(), 0)
+        except Exception as exc:
+            raise ValueError("USB FW wire bytes must be an integer") from exc
+        if pad < 0 or pad > STM_FW_API_SAFE_WIRE_LEN:
+            raise ValueError(
+                f"USB FW wire bytes must be between 0 and {STM_FW_API_SAFE_WIRE_LEN}"
+            )
+        return pad
+
+    def _open_usb_flash_bridge(self, vid: int | None = None, pid: int | None = None) -> USBFlashBridge:
+        if vid is None or pid is None:
+            vid, pid = self._usb_vid_pid()
+        return USBFlashBridge(vid=vid, pid=pid)
+
+    @staticmethod
+    def _usb_bridge_is_fs(bridge: object) -> bool:
+        speed = str(getattr(bridge, "usb_speed_name", "unknown")).strip().upper()
+        mps = int(getattr(bridge, "fw_out_chunk_size_detected",
+                          getattr(bridge, "fw_out_chunk_size", 0)) or 0)
+        return speed == "FS" or speed == "2" or (0 < mps <= 64)
+
+    @staticmethod
+    def _usb_bridge_is_hs(bridge: object) -> bool:
+        speed = str(getattr(bridge, "usb_speed_name", "unknown")).strip().upper()
+        mps = int(getattr(bridge, "fw_out_chunk_size_detected",
+                          getattr(bridge, "fw_out_chunk_size", 0)) or 0)
+        return speed == "HS" or speed == "3" or mps >= 512
+
+    def _wait_usb_flash_bridge_fs(
+        self,
+        vid: int,
+        pid: int,
+        timeout_s: float,
+        log: Callable[[str], None],
+    ) -> USBFlashBridge:
+        deadline = time.monotonic() + max(0.5, float(timeout_s))
+        last_status = "not opened yet"
+
+        while time.monotonic() < deadline:
+            bridge = None
+            keep_bridge = False
+            try:
+                bridge = self._open_usb_flash_bridge(vid, pid)
+                speed = str(getattr(bridge, "usb_speed_name", "unknown"))
+                mps = int(getattr(bridge, "fw_out_chunk_size_detected",
+                                  getattr(bridge, "fw_out_chunk_size", 0)) or 0)
+                if self._usb_bridge_is_fs(bridge):
+                    log(f"USB re-enumerated as FS (speed={speed}, EP1 OUT MPS={mps}).")
+                    keep_bridge = True
+                    return bridge
+                last_status = f"device still {speed}, EP1 OUT MPS {mps}"
+            except Exception as exc:
+                last_status = f"{type(exc).__name__}: {exc}"
+            finally:
+                if bridge is not None and not keep_bridge:
+                    try:
+                        bridge.close()
+                    except Exception:
+                        pass
+            time.sleep(0.2)
+
+        raise TimeoutError(
+            f"Timed out waiting for USB FS re-enumeration VID={vid:04X}/PID={pid:04X}; "
+            f"last status: {last_status}"
+        )
+
+    def _wait_usb_flash_bridge_hs(
+        self,
+        vid: int,
+        pid: int,
+        timeout_s: float,
+        log: Callable[[str], None],
+    ) -> USBFlashBridge:
+        deadline = time.monotonic() + max(0.5, float(timeout_s))
+        last_status = "not opened yet"
+
+        while time.monotonic() < deadline:
+            bridge = None
+            keep_bridge = False
+            try:
+                bridge = self._open_usb_flash_bridge(vid, pid)
+                speed = str(getattr(bridge, "usb_speed_name", "unknown"))
+                mps = int(getattr(bridge, "fw_out_chunk_size_detected",
+                                  getattr(bridge, "fw_out_chunk_size", 0)) or 0)
+                if self._usb_bridge_is_hs(bridge):
+                    log(f"USB re-enumerated as HS (speed={speed}, EP1 OUT MPS={mps}).")
+                    keep_bridge = True
+                    return bridge
+                last_status = f"device still {speed}, EP1 OUT MPS {mps}"
+            except Exception as exc:
+                last_status = f"{type(exc).__name__}: {exc}"
+            finally:
+                if bridge is not None and not keep_bridge:
+                    try:
+                        bridge.close()
+                    except Exception:
+                        pass
+            time.sleep(0.2)
+
+        raise TimeoutError(
+            f"Timed out waiting for USB HS re-enumeration VID={vid:04X}/PID={pid:04X}; "
+            f"last status: {last_status}"
+        )
+
+    def _mark_shared_usb_disconnected(self, client: USBClient, reason: str, log: Callable[[str], None]) -> None:
+        try:
+            client.stop()
+        except Exception as exc:
+            log(f"WARN: Failed to stop stale shared USB session after {reason}: {exc}")
+
+        def _drop():
+            if self.client is client:
+                self.client = None
+                self.btn_connect.configure(state=tk.NORMAL)
+                self.btn_disconnect.configure(state=tk.DISABLED)
+                self.rb_eth.configure(state=tk.NORMAL)
+                self.rb_usb.configure(state=tk.NORMAL)
+                self.status_var.set("USB re-enumeration disconnected the shared session")
+
+        self.after(0, _drop)
 
     def _usb_dir_changed(self):
         """Toggle OUT-data vs IN-length entry fields based on direction."""
@@ -724,8 +991,28 @@ class App(tk.Tk):
         self._usb_in_len_entry.configure(state=state_in)
         self._usb_out_data_entry.configure(state=state_out)
 
+    def _runtime_api_block_begin(self, owner: str):
+        if self._runtime_api_block_owner:
+            raise RuntimeError(
+                f"Runtime API traffic is already blocked by {self._runtime_api_block_owner}"
+            )
+        self._runtime_api_block_owner = owner
+        if self.client and hasattr(self.client, "set_runtime_api_blocked"):
+            self.client.set_runtime_api_blocked(True, owner)
+
+    def _runtime_api_block_end(self, owner: str):
+        if self.client and hasattr(self.client, "set_runtime_api_blocked"):
+            self.client.set_runtime_api_blocked(False, owner)
+        if self._runtime_api_block_owner == owner:
+            self._runtime_api_block_owner = None
+
     def _send_usb_control(self):
         """Execute a USB EP0 control transfer and log result to TX/RX monitor."""
+        if self._runtime_api_block_owner:
+            self._txrx_line(
+                f"{host_ts_short()}  Runtime API blocked by {self._runtime_api_block_owner}"
+            )
+            return
         if not isinstance(self.client, USBClient):
             self._txrx_line(f"{host_ts_short()}  ⚠ USB not connected")
             return
@@ -827,6 +1114,11 @@ class App(tk.Tk):
         self._send_hex(s, note="Custom HEX")
 
     def _send_hex(self, hex_str: str, note: str):
+        if self._runtime_api_block_owner:
+            self._txrx_line(
+                f"{host_ts_short()}  Runtime API blocked by {self._runtime_api_block_owner}; TX skipped ({note})"
+            )
+            return
         if not self.client:
             self._txrx_line(f"{host_ts_short()}  ⚠ Not connected")
             return
@@ -854,6 +1146,11 @@ class App(tk.Tk):
             self._txrx_line(f"{host_ts_short()}  ✖ TX error: {e}")
 
     def _send_bytes(self, b: bytes, note: str):
+        if self._runtime_api_block_owner:
+            self._txrx_line(
+                f"{host_ts_short()}  Runtime API blocked by {self._runtime_api_block_owner}; TX skipped ({note})"
+            )
+            return
         if not self.client:
             self._txrx_line(f"{host_ts_short()}  ⚠ Not connected")
             return
@@ -869,8 +1166,6 @@ class App(tk.Tk):
         Called from the NetClient thread when a MANUAL command gets no response.
         Returns True if user wants to retry, False to skip.
         """
-        # This is called from the network thread, so we need to use messagebox
-        # which is thread-safe in tkinter
         result = messagebox.askyesno(
             "Command Failed",
             f"No response received for {tag} command after 3 retries:\n\n"
@@ -926,6 +1221,9 @@ class App(tk.Tk):
                 elif kind == "cps":
                     self._render_cps_to_plot_tab(payload)  # type: ignore
 
+                elif kind == "raw_counts":
+                    self._render_raw_counts(payload)  # type: ignore
+
                 elif kind == "fsk":
                     seq, rec_count, preview_records = payload  # type: ignore
                     fsk_packets += 1
@@ -956,7 +1254,46 @@ class App(tk.Tk):
     def _bytes_hex(b: bytes) -> str:
         return " ".join(f"{x:02X}" for x in b)
 
-    def _insert_packet_block(self, block: str, adjusted_ts_ms: float | None):
+    def _build_cps_packet_display(self, info: dict) -> tuple[str, str, int | None, object, object]:
+        pwr_ts_bytes: bytes = info["pwr_ts_bytes"]
+        pwr_ts_le = int.from_bytes(pwr_ts_bytes, "little")
+        rect_v = info.get("rect_v")
+        rect_i = info.get("rect_i")
+        cps_ts_bytes = info.get("cps_ts_bytes")
+        payload_valid = int(info.get("payload_valid", 0))
+
+        packet_ts_le: int | None = None
+        if payload_valid == 1 and cps_ts_bytes is not None:
+            packet_ts_le = int.from_bytes(cps_ts_bytes, "little")
+
+        ascii_text = ""
+        if payload_valid == 1:
+            ascii_text = info.get("payload", b"").decode("ascii", errors="replace").rstrip()
+
+        lines = []
+        if ascii_text:
+            for ln in ascii_text.splitlines():
+                lines.append(ln)
+        else:
+            lines.append("[NO VALID PAYLOAD]")
+
+        detail_lines = [
+            f"pwr_ts    : {self._bytes_hex(pwr_ts_bytes)} (le={pwr_ts_le})",
+            f"rect_v    : {rect_v}",
+            f"rect_i    : {rect_i}",
+        ]
+        if packet_ts_le is not None:
+            detail_lines.append(
+                f"packet_ts : {self._bytes_hex(cps_ts_bytes)} (le={packet_ts_le})"  # type: ignore
+            )
+        else:
+            detail_lines.append("packet_ts : n/a")
+        if info.get("_udp_addr"):
+            detail_lines.append(f"source    : {info['_udp_addr']}")
+
+        return "\n".join(lines), "\n".join(detail_lines), packet_ts_le, rect_v, rect_i
+
+    def _insert_packet_block(self, block: str, adjusted_ts_ms: float | None, detail_text: str = ""):
         """
         First line is clickable only if we have an adjusted_ts_ms to highlight on plot.
         """
@@ -977,9 +1314,11 @@ class App(tk.Tk):
             self.plot_pkt_text.tag_bind(tag, "<Enter>", lambda e: self.plot_pkt_text.config(cursor="hand2"))
             self.plot_pkt_text.tag_bind(tag, "<Leave>", lambda e: self.plot_pkt_text.config(cursor=""))
             self._pkt_tag_to_ts[tag] = float(adjusted_ts_ms)
+            self._pkt_tag_to_details[tag] = detail_text
         else:
             # non-clickable if no packet_ts / no plot point
             self.plot_pkt_text.tag_bind(tag, "<Enter>", lambda e: None)
+            self._pkt_tag_to_details[tag] = detail_text
 
         for ln in lines[1:]:
             self.plot_pkt_text.insert("end", ln + "\n")
@@ -993,41 +1332,7 @@ class App(tk.Tk):
         Plot using packet_ts (cps_ts_bytes) NOT pwr_ts.
         If payload_valid==0 (no packet_ts), we skip plotting.
         """
-        pwr_ts_bytes: bytes = info["pwr_ts_bytes"]
-        pwr_ts_le = int.from_bytes(pwr_ts_bytes, "little")
-
-        rect_v = info.get("rect_v")
-        rect_i = info.get("rect_i")
-
-        cps_ts_bytes = info.get("cps_ts_bytes")
-        payload_valid = int(info.get("payload_valid", 0))
-
-        # We only plot when packet_ts exists (payload_valid==1)
-        packet_ts_le: int | None = None
-        if payload_valid == 1 and cps_ts_bytes is not None:
-            packet_ts_le = int.from_bytes(cps_ts_bytes, "little")
-
-        ascii_text = ""
-        if payload_valid == 1:
-            ascii_text = info.get("payload", b"").decode("ascii", errors="replace").rstrip()
-
-        # Build decoded block (packet list)
-        lines = []
-        lines.append(f"pwr_ts        : {self._bytes_hex(pwr_ts_bytes)} (le={pwr_ts_le})")
-        lines.append(f"rect_v        : {rect_v}")
-        lines.append(f"rect_i        : {rect_i}")
-
-        if packet_ts_le is not None:
-            lines.append(f"packet_ts     : {self._bytes_hex(cps_ts_bytes)} (le={packet_ts_le})")  # type: ignore
-
-        if ascii_text:
-            for ln in ascii_text.splitlines():
-                lines.append(ln)
-
-        if rect_v is not None:
-            lines.append(f"Vrect={rect_v}")
-
-        block = "\n".join(lines)
+        block, detail_text, packet_ts_le, rect_v, rect_i = self._build_cps_packet_display(info)
 
         # Insert clickable packet block.
         # For hyperlink highlight, store the *adjusted* plot timestamp.
@@ -1035,7 +1340,7 @@ class App(tk.Tk):
         if packet_ts_le is not None and rect_v is not None and rect_i is not None:
             adjusted_ts = self.plot_panel.push_point(packet_ts_le, int(rect_v), int(rect_i))
 
-        self._insert_packet_block(block, adjusted_ts)
+        self._insert_packet_block(block, adjusted_ts, detail_text)
 
     def _pkt_yscroll_set(self, first: str, last: str):
         """yscrollcommand wrapper — updates scrollbar and autoscroll flag for ALL scroll sources."""
@@ -1052,20 +1357,55 @@ class App(tk.Tk):
         idx = self.plot_pkt_text.index(f"@{event.x},{event.y}")
         tags = self.plot_pkt_text.tag_names(idx)
         for t in tags:
-            if t.startswith("pkt_") and t in self._pkt_tag_to_ts:
-                adj_ts = self._pkt_tag_to_ts[t]
-                self.plot_panel.highlight_timestamp(adj_ts)
+            if t.startswith("pkt_"):
+                if t in self._pkt_tag_to_details:
+                    self._pkt_detail_var.set(self._pkt_tag_to_details[t])
+                if t in self._pkt_tag_to_ts:
+                    adj_ts = self._pkt_tag_to_ts[t]
+                    self.plot_panel.highlight_timestamp(adj_ts)
                 break
 
-
     # ---------------- Helpers ----------------
-    def _plot_start(self):
-        self._plot_paused = False
+    def _toggle_raw_counts(self):
+        enabled = self._raw_counts_var.get()
+        self.plot_panel.show_raw_counts(enabled)
         if self.client:
-            self.client.plot_enabled = True
+            self.client.raw_counts_enabled = enabled
+        if enabled:
+            self._txrx_line(
+                f"{host_ts_short()}  Raw Vrect/Irect count polling enabled "
+                "(requires Calibration mode)"
+            )
+
+    def _render_raw_counts(self, info: dict):
+        if not self._raw_counts_var.get():
+            return
+        self.plot_panel.update_raw_counts(
+            info["raw_vrect_count"],
+            info["raw_irect_count"],
+        )
+
+    def _plot_start(self):
+        if self._runtime_api_block_owner:
+            self._txrx_line(
+                f"{host_ts_short()}  Streamer/polling blocked by {self._runtime_api_block_owner}"
+            )
+            return
+        if not self.client:
+            self._txrx_line(f"{host_ts_short()}  Not connected; streamer was not started")
+            return
+        self._plot_paused = False
+        self.client.configure_streamer_format(self._new_streamer_var.get())
+        self.client.configure_streamer_message_reassembly(
+            self._reassemble_streamer_var.get()
+        )
+        self.client.set_streamer_control(True)
+        self.client.plot_enabled = True
         self.btn_plot_start.configure(state=tk.DISABLED)
         self.btn_plot_pause.configure(state=tk.NORMAL, text="Pause")
         self.btn_plot_stop.configure(state=tk.NORMAL)
+        self._new_streamer_check.configure(state=tk.DISABLED)
+        self._reassemble_streamer_check.configure(state=tk.DISABLED)
 
     def _plot_pause(self):
         if not self._plot_paused:
@@ -1076,6 +1416,11 @@ class App(tk.Tk):
             self.btn_plot_pause.configure(text="Resume")
         else:
             # Resume
+            if self._runtime_api_block_owner:
+                self._txrx_line(
+                    f"{host_ts_short()}  Streamer/polling blocked by {self._runtime_api_block_owner}"
+                )
+                return
             self._plot_paused = False
             if self.client:
                 self.client.plot_enabled = True
@@ -1085,15 +1430,22 @@ class App(tk.Tk):
         self._plot_paused = False
         if self.client:
             self.client.plot_enabled = False
+            self.client.set_streamer_control(False)
         self.btn_plot_start.configure(state=tk.NORMAL)
         self.btn_plot_pause.configure(state=tk.DISABLED, text="Pause")
         self.btn_plot_stop.configure(state=tk.DISABLED)
+        self._new_streamer_check.configure(state=tk.NORMAL)
+        self._reassemble_streamer_check.configure(state=tk.NORMAL)
 
     def clear_plot_all(self):
         self.plot_panel.clear()
         self.plot_pkt_text.delete("1.0", "end")
         self._pkt_tag_to_ts.clear()
+        self._pkt_tag_to_details.clear()
         self._pkt_counter = 0
+        self._pkt_detail_var.set(
+            "Click a packet to view rectified voltage/current and timestamps."
+        )
 
     def _txrx_line(self, s: str):
         self.txrx_text.insert("end", s + "\n")
@@ -1373,16 +1725,19 @@ class App(tk.Tk):
         self._fw_file_path = tk.StringVar(value="")
         self._fw_offset_var = tk.StringVar(value="0x10000")
         self._fw_fparams_var = tk.StringVar(value="0x0220")
-        self._fw_bridge_port_var = tk.StringVar(value="5003")
+        self._fw_bridge_port_var = tk.StringVar(value="5002")
         self._fw_baud_var = tk.StringVar(value=str(DEFAULT_FLASH_BAUD))
-        self._fw_timeout_var = tk.StringVar(value="1.5")  # base timeout for quick FW replies
+        self._fw_timeout_var = tk.StringVar(value="2.0")  # base timeout for quick FW replies
+        self._fw_usb_write_timeout_var = tk.StringVar(value=str(USB_FW_WRITE_TIMEOUT_MS_DEFAULT))
+        self._fw_api_dump_enabled = tk.BooleanVar(value=False)
         self._fw_progress_var = tk.DoubleVar(value=0.0)
         self._fw_status_var = tk.StringVar(value="Idle")
-        self._fw_step_mode = tk.BooleanVar(value=True)  # step-by-step verification
+        self._fw_step_mode = tk.BooleanVar(value=False)  # step-by-step verification
         self._fw_cancel_event: threading.Event | None = None
         self._fw_step_gate: threading.Event | None = None
         self._fw_flasher: object | None = None  # ESPFlasher ref for auto_mode toggle
         self._fw_thread: threading.Thread | None = None
+        self._fw_using_shared_transport = False
 
         # ---- Top: file selection ----
         file_lf = ttk.LabelFrame(self.tab_fw, text="Firmware Binary")
@@ -1416,7 +1771,7 @@ class App(tk.Tk):
         cfg_row2 = ttk.Frame(cfg_lf)
         cfg_row2.pack(fill=tk.X, padx=8, pady=(0, 8))
 
-        ttk.Label(cfg_row2, text="Bridge port:").pack(side=tk.LEFT)
+        ttk.Label(cfg_row2, text="API port (Ethernet):").pack(side=tk.LEFT)
         ttk.Entry(cfg_row2, textvariable=self._fw_bridge_port_var, width=8).pack(
             side=tk.LEFT, padx=(4, 16))
         ttk.Label(cfg_row2, text="(IP from top bar)").pack(side=tk.LEFT, padx=(0, 16))
@@ -1428,10 +1783,19 @@ class App(tk.Tk):
         ttk.Label(cfg_row2, text="Base timeout (s):").pack(side=tk.LEFT)
         ttk.Entry(cfg_row2, textvariable=self._fw_timeout_var, width=6).pack(
             side=tk.LEFT, padx=(4, 6))
-        ttk.Label(cfg_row2, text="(quick replies default 1.5s; erase/write steps scale automatically)").pack(side=tk.LEFT)
+        ttk.Label(cfg_row2, text="USB write timeout (ms):").pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Entry(cfg_row2, textvariable=self._fw_usb_write_timeout_var, width=7).pack(
+            side=tk.LEFT, padx=(4, 6))
+        ttk.Label(cfg_row2, text="(quick replies default 2s; erase/write steps scale automatically)").pack(side=tk.LEFT, padx=(10, 0))
 
-        ttk.Checkbutton(cfg_row2, text="Step-by-step verification (pause after each protocol step)",
-                         variable=self._fw_step_mode).pack(side=tk.LEFT, padx=(16, 0))
+        cfg_row4 = ttk.Frame(cfg_lf)
+        cfg_row4.pack(fill=tk.X, padx=8, pady=(0, 8))
+
+        ttk.Checkbutton(cfg_row4, text="Step-by-step verification (pause after each protocol step)",
+                         variable=self._fw_step_mode).pack(side=tk.LEFT)
+
+        ttk.Checkbutton(cfg_row4, text="Dump replay API hex on .bin select",
+                         variable=self._fw_api_dump_enabled).pack(side=tk.LEFT, padx=(16, 0))
 
         # ---- Action buttons ----
         btn_row = ttk.Frame(self.tab_fw)
@@ -1444,6 +1808,18 @@ class App(tk.Tk):
         self._fw_btn_cancel = ttk.Button(btn_row, text="Cancel",
                                           command=self._fw_cancel, state=tk.DISABLED)
         self._fw_btn_cancel.pack(side=tk.LEFT, padx=(0, 16))
+
+        self._fw_btn_switch_fs = ttk.Button(btn_row, text="Switch USB to FS",
+                                            command=lambda: self._fw_usb_speed_switch_start("fs"))
+        self._fw_btn_switch_fs.pack(side=tk.LEFT, padx=(0, 8))
+
+        self._fw_btn_switch_hs = ttk.Button(btn_row, text="Switch USB to HS",
+                                            command=lambda: self._fw_usb_speed_switch_start("hs"))
+        self._fw_btn_switch_hs.pack(side=tk.LEFT, padx=(0, 16))
+
+        self._fw_btn_dump_replay = ttk.Button(btn_row, text="Dump 512 Replay",
+                                              command=self._fw_dump_replay_start)
+        self._fw_btn_dump_replay.pack(side=tk.LEFT, padx=(0, 16))
 
         ttk.Label(btn_row, textvariable=self._fw_status_var).pack(side=tk.LEFT)
 
@@ -1475,6 +1851,232 @@ class App(tk.Tk):
             filetypes=[("Binary files", "*.bin"), ("All files", "*.*")])
         if path:
             self._fw_file_path.set(path)
+            if self._fw_api_dump_enabled.get():
+                self._fw_dump_api_sequence_for_bin(path)
+
+    def _fw_make_api_dump_path(self, fw_path: str) -> str:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        base = os.path.splitext(os.path.basename(fw_path))[0] or "firmware"
+        safe = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in base)
+        return os.path.join(LOG_DIR, "fw_update", f"api_dump_{safe}_{stamp}.log")
+
+    def _fw_make_api_replay_path(self, dump_path: str) -> str:
+        name = os.path.basename(dump_path).replace("api_dump_", "api_replay_512_", 1)
+        return os.path.join(os.path.dirname(dump_path), name)
+
+    def _fw_dump_replay_start(self):
+        fw_path = self._fw_file_path.get().strip()
+        if not fw_path:
+            messagebox.showerror("FW Update", "Please select a firmware binary file first.")
+            return
+        self._fw_dump_api_sequence_for_bin(fw_path)
+
+    def _fw_dump_api_sequence_for_bin(self, fw_path: str):
+        try:
+            with open(fw_path, "rb") as f:
+                firmware = f.read()
+            flash_offset = int(self._fw_offset_var.get().strip(), 0)
+            flash_params = int(self._fw_fparams_var.get().strip(), 0)
+        except Exception as exc:
+            self._fw_log(f"WARN: Could not generate FW API dump: {exc}")
+            return
+
+        path = self._fw_make_api_dump_path(fw_path)
+        replay_path = self._fw_make_api_replay_path(path)
+        use_usb = self.conn_type_var.get() == "USB"
+        flash_block_size = USB_FLASH_DATA_BLOCK_SIZE if use_usb else FLASH_BLOCK_SIZE
+        runtime_flash_baud = 115200
+        try:
+            usb_wire_pad = self._usb_fw_pad_bytes() if use_usb else 0
+        except ValueError as exc:
+            self._fw_log(f"WARN: Could not generate FW API dump: {exc}")
+            return
+        usb_declared_len = usb_wire_pad if usb_wire_pad else 0
+        replay_wire_len = 512
+        replay_declared_len = replay_wire_len
+        seq = 1
+
+        def api_frame(subop: int, payload: bytes = b"") -> bytes:
+            nonlocal seq
+            total_len = 9 + len(payload)
+            if total_len > STM_FW_API_SAFE_MAX_LEN:
+                raise ValueError(
+                    f"API frame length {total_len} exceeds limit {STM_FW_API_SAFE_MAX_LEN}"
+                )
+            frame = bytearray(total_len)
+            frame[0] = STM_FW_API_PKT_TYPE
+            frame[1] = total_len & 0xFF
+            frame[2] = (total_len >> 8) & 0xFF
+            frame[3] = seq & 0xFF
+            frame[4] = 0x00
+            frame[5] = STM_FW_API_FUNC
+            frame[6] = 0x00
+            frame[7] = 0x00
+            frame[8] = ((subop & 0x0F) << 4) | STM_FW_CTRL_TYPE_DISPLAY
+            frame[9:] = payload
+            seq = (seq + 1) & 0xFF
+            return bytes(frame)
+
+        def usb_wire_frame(frame: bytes) -> tuple[bytes, bytes, int]:
+            if usb_wire_pad:
+                target_wire_len = max(usb_wire_pad, len(frame))
+                if usb_declared_len < len(frame):
+                    raise ValueError(
+                        f"USB declared API length {usb_declared_len} is smaller than "
+                        f"unpadded frame length {len(frame)}"
+                    )
+                if usb_declared_len > target_wire_len:
+                    raise ValueError(
+                        f"USB declared API length {usb_declared_len} exceeds wire length "
+                        f"{target_wire_len}"
+                    )
+                wire = bytearray(frame)
+                wire[1] = usb_declared_len & 0xFF
+                wire[2] = (usb_declared_len >> 8) & 0xFF
+                logical = bytearray(wire)
+                if len(logical) < usb_declared_len:
+                    logical.extend(bytes(usb_declared_len - len(logical)))
+                if len(wire) < target_wire_len:
+                    wire.extend(bytes(target_wire_len - len(wire)))
+                return bytes(logical), bytes(wire), usb_declared_len
+            return frame, frame, len(frame)
+
+        def replay_512_frame(frame: bytes) -> bytes:
+            if len(frame) > replay_declared_len:
+                raise ValueError(
+                    f"API frame length {len(frame)} exceeds 512-byte replay declared "
+                    f"length {replay_declared_len}; select USB transport so the "
+                    f"{USB_FLASH_DATA_BLOCK_SIZE}-byte FLASH_DATA block size is used"
+                )
+            wire = bytearray(frame)
+            wire[1] = replay_declared_len & 0xFF
+            wire[2] = (replay_declared_len >> 8) & 0xFF
+            if len(wire) < replay_wire_len:
+                wire.extend(bytes(replay_wire_len - len(wire)))
+            return bytes(wire)
+
+        def write_api_for_esp_cmd(op: int, payload: bytes = b"", checksum: int = 0) -> tuple[bytes, bytes, bytes]:
+            pkt = build_cmd(op, payload, checksum)
+            wire = slip_encode(pkt)
+            api = api_frame(STM_FW_API_WRITE, struct.pack("<H", len(wire)) + wire)
+            return api, pkt, wire
+
+        lines: list[str] = [
+            "ESP FW STM API HEX DUMP",
+            f"Generated       : {self._fw_host_ts_full()}",
+            f"Firmware file   : {fw_path}",
+            f"Firmware size   : {len(firmware)} bytes",
+            f"Flash offset    : 0x{flash_offset:X}",
+            f"Flash params    : 0x{flash_params:04X}",
+            "Assumed chip    : ESP32-S3/newer FLASH_BEGIN format",
+            f"Transport mode  : {'USB HS bulk' if use_usb else 'Ethernet/API'}",
+            f"API seq mode    : uint8 wrap, first seq=0x01",
+            f"Runtime baud    : {runtime_flash_baud}",
+            f"FLASH_DATA size : {flash_block_size} bytes",
+            f"USB wire pad    : {'ON' if usb_wire_pad else 'OFF'}",
+            f"USB declared len: {usb_declared_len if usb_wire_pad else 'N/A'}",
+            "Replay          : LOGICAL_API_HEX is the API frame sent to STM.",
+            "External USB    : USB_WIRE_HEX is the exact raw bulk OUT bytes for USB.",
+            f"Replay-only file: {replay_path}",
+            f"Replay-only fmt : one {replay_wire_len}-byte hex API frame per line, bytes[1:2]={replay_declared_len}",
+            "",
+        ]
+        replay_lines: list[str] = []
+
+        def add_entry(label: str, frame: bytes, note: str = ""):
+            idx = len([ln for ln in lines if ln.startswith("#")]) + 1
+            logical, wire, declared_len = usb_wire_frame(frame)
+            replay_wire = replay_512_frame(frame)
+            replay_lines.append(hex_dump_spaces(replay_wire))
+            seq_low = frame[3] if len(frame) > 3 else 0
+            lines.append(
+                f"#{idx:05d} {label} seq=0x{seq_low:02X} "
+                f"api_len={declared_len if usb_wire_pad else len(frame)} "
+                f"wire_len={len(wire)}"
+            )
+            if note:
+                lines.append(f"NOTE: {note}")
+            if usb_wire_pad:
+                lines.append(
+                    f"USB_WIRE_NOTE: bytes[1:2]={declared_len} API bytes; "
+                    f"host bulk OUT wire length={len(wire)} bytes; bytes[3:4] remain sequence bytes"
+                )
+                lines.append(f"LOGICAL_API_HEX: {hex_dump_spaces(logical)}")
+                lines.append(f"USB_WIRE_HEX: {hex_dump_spaces(wire)}")
+            else:
+                lines.append(f"LOGICAL_API_HEX: {hex_dump_spaces(frame)}")
+            lines.append("")
+
+        add_entry("API_ESP_FW_START", api_frame(STM_FW_API_START))
+
+        sync_payload = bytes([0x07, 0x07, 0x12, 0x20]) + (b"\x55" * 32)
+        frame, _, _ = write_api_for_esp_cmd(OP_SYNC, sync_payload)
+        add_entry("WRITE SYNC op=0x08", frame)
+
+        frame, _, _ = write_api_for_esp_cmd(OP_READ_REG, struct.pack("<I", 0x40001000))
+        add_entry("WRITE READ_REG op=0x0A addr=0x40001000", frame)
+
+        frame, _, _ = write_api_for_esp_cmd(OP_SPI_ATTACH, struct.pack("<II", 0, 0))
+        add_entry("WRITE SPI_ATTACH op=0x0D", frame)
+
+        spi_params = struct.pack("<6I", 0, 4 * 1024 * 1024, 65536, 4096, 256, 0xFFFF)
+        frame, _, _ = write_api_for_esp_cmd(OP_SPI_SET_PARAMS, spi_params)
+        add_entry("WRITE SPI_SET_PARAMS op=0x0B", frame)
+
+        block_size = flash_block_size
+        num_blocks = (len(firmware) + block_size - 1) // block_size
+        flash_begin_payload = struct.pack(
+            "<5I", len(firmware), num_blocks, block_size, flash_offset, 0
+        )
+        frame, _, _ = write_api_for_esp_cmd(OP_FLASH_BEGIN, flash_begin_payload)
+        add_entry(
+            "WRITE FLASH_BEGIN op=0x02",
+            frame,
+            f"size={len(firmware)} blocks={num_blocks} block_size={block_size} offset=0x{flash_offset:X}",
+        )
+
+        bla = CHIP_BLA.get(CHIP_ESP32S3, 0x0000)
+        for block_idx in range(num_blocks):
+            start = block_idx * block_size
+            chunk = firmware[start:start + block_size]
+            patched = False
+            if block_idx == 0 and flash_offset == bla and len(chunk) >= 4:
+                mutable = bytearray(chunk)
+                if mutable[0] == 0xE9:
+                    mutable[2] = (flash_params >> 8) & 0xFF
+                    mutable[3] = flash_params & 0xFF
+                    chunk = bytes(mutable)
+                    patched = True
+
+            sub_header = struct.pack("<IIII", len(chunk), block_idx, 0, 0)
+            checksum = esp_checksum(chunk)
+            frame, _, _ = write_api_for_esp_cmd(OP_FLASH_DATA, sub_header + chunk, checksum)
+            note = (
+                f"block={block_idx} offset=0x{flash_offset + start:X} "
+                f"size={len(chunk)} checksum=0x{checksum:02X}"
+            )
+            if patched:
+                note += " patched_flash_params=yes"
+            add_entry(f"WRITE FLASH_DATA op=0x03 block={block_idx}", frame, note)
+
+        frame, _, _ = write_api_for_esp_cmd(OP_FLASH_END, struct.pack("<I", 0))
+        add_entry("WRITE FLASH_END op=0x04 reboot=yes", frame)
+
+        add_entry("API_ESP_FW_END", api_frame(STM_FW_API_END))
+
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            with open(replay_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(replay_lines))
+            self._fw_log(f"FW API verbose dump saved to {path}")
+            self._fw_log(
+                f"FW API 512-byte echo replay file saved to {replay_path} "
+                f"({len(replay_lines)} frame(s), one raw API per line)"
+            )
+        except Exception as exc:
+            self._fw_log(f"WARN: Could not write FW API dump: {exc}")
 
     @staticmethod
     def _fw_host_ts_full() -> str:
@@ -1498,8 +2100,8 @@ class App(tk.Tk):
         except Exception:
             pass
 
-    def _fw_write_session_header(self, fw_path: str, firmware: bytes, ip: str,
-                                 bridge_port: int, flash_offset: int,
+    def _fw_write_session_header(self, fw_path: str, firmware: bytes, transport_desc: str,
+                                 flash_offset: int,
                                  flash_params: int, flash_baud: int,
                                  step_mode: bool,
                                  cmd_timeout: float):
@@ -1510,7 +2112,7 @@ class App(tk.Tk):
             f"Trace file      : {self._fw_log_file}",
             f"Firmware file   : {fw_path}",
             f"Firmware size   : {len(firmware)} bytes",
-            f"Bridge endpoint : {ip}:{bridge_port}",
+            f"Transport       : {transport_desc}",
             f"Flash offset    : 0x{flash_offset:X}",
             f"Flash params    : 0x{flash_params:04X}",
             f"Flash baud      : {flash_baud}",
@@ -1594,6 +2196,17 @@ class App(tk.Tk):
             self._fw_status_var.set(status)
         self.after(0, _update)
 
+    def _fw_set_action_buttons_state(self, state: str) -> None:
+        for btn_name in (
+            "_fw_btn_flash",
+            "_fw_btn_switch_fs",
+            "_fw_btn_switch_hs",
+            "_fw_btn_dump_replay",
+        ):
+            btn = getattr(self, btn_name, None)
+            if btn is not None:
+                btn.configure(state=state)
+
     def _fw_start(self):
         # Validate inputs
         fw_path = self._fw_file_path.get().strip()
@@ -1622,12 +2235,21 @@ class App(tk.Tk):
             messagebox.showerror("FW Update", "Invalid flash params (use hex like 0x0220).")
             return
 
-        ip = self.ip_var.get().strip()
+        use_usb = self.conn_type_var.get() == "USB"
         try:
-            bridge_port = int(self._fw_bridge_port_var.get().strip())
-        except ValueError:
-            messagebox.showerror("FW Update", "Invalid bridge port number.")
+            usb_fw_pad_bytes = self._usb_fw_pad_bytes() if use_usb else 0
+            usb_vid, usb_pid = self._usb_vid_pid() if use_usb else (0, 0)
+        except ValueError as exc:
+            messagebox.showerror("FW Update", str(exc))
             return
+        ip = self.ip_var.get().strip()
+        bridge_port = 0
+        if not use_usb:
+            try:
+                bridge_port = int(self._fw_bridge_port_var.get().strip())
+            except ValueError:
+                messagebox.showerror("FW Update", "Invalid bridge port number.")
+                return
 
         try:
             flash_baud = int(self._fw_baud_var.get().strip(), 0)
@@ -1645,41 +2267,70 @@ class App(tk.Tk):
             messagebox.showerror("FW Update", "Invalid timeout (use positive number in seconds, e.g., 0.5).")
             return
 
+        try:
+            usb_write_timeout_ms = int(self._fw_usb_write_timeout_var.get().strip())
+            if usb_write_timeout_ms <= 0:
+                raise ValueError("USB write timeout must be positive")
+        except ValueError:
+            messagebox.showerror("FW Update", "Invalid USB write timeout (use positive milliseconds, e.g., 5000).")
+            return
+
         step_mode = self._fw_step_mode.get()
+        shared_transport_desc = self._fw_shared_transport_desc(use_usb, ip, bridge_port)
+        transport_desc = shared_transport_desc or ("USB HS/FS bulk bridge" if use_usb else f"Ethernet {ip}:{bridge_port}")
 
         # Confirm
         size_kb = len(firmware) / 1024
+        usb_id_line = f"USB VID/PID: {usb_vid:04X}:{usb_pid:04X}\n" if use_usb else ""
+        usb_wire_line = (
+            f"USB FW wire: {usb_fw_pad_bytes} bytes, bytes[1:2]={usb_fw_pad_bytes}\n"
+            if use_usb and usb_fw_pad_bytes else
+            f"USB FW wire: {'OFF' if use_usb else 'N/A'}\n"
+        )
         msg = (f"Flash {size_kb:.1f} KB to 0x{flash_offset:X}\n"
                f"Flash params: 0x{flash_params:04X}\n"
                f"ESP flash baud: {flash_baud}\n"
-               f"via {ip}:{bridge_port}\n"
+               f"Transport: {transport_desc}\n"
+               f"{usb_id_line}"
+               f"{usb_wire_line}"
                f"Step-by-step: {'ON' if step_mode else 'OFF'}\n\n"
                f"Proceed?")
         if not messagebox.askyesno("FW Update", msg):
             return
 
+        try:
+            self._runtime_api_block_begin("ESP FW Update")
+        except RuntimeError as exc:
+            messagebox.showinfo("FW Update", str(exc))
+            return
+
         # Disable controls, enable cancel
-        self._fw_btn_flash.configure(state=tk.DISABLED)
+        self._fw_set_action_buttons_state(tk.DISABLED)
         self._fw_btn_cancel.configure(state=tk.NORMAL)
         self._fw_log_text.delete("1.0", "end")
         self._fw_progress_var.set(0.0)
-        self._fw_status_var.set("Connecting...")
+        self._fw_status_var.set("Connecting..." if not use_usb else "Opening USB...")
         self._fw_log_file = self._fw_make_log_path()
         self._fw_write_session_header(
-            fw_path, firmware, ip, bridge_port, flash_offset,
+            fw_path, firmware, transport_desc, flash_offset,
             flash_params, flash_baud, step_mode, cmd_timeout,
         )
+        if self._fw_api_dump_enabled.get():
+            self._fw_dump_api_sequence_for_bin(fw_path)
         self._fw_cancel_event = threading.Event()
         self._fw_step_gate = threading.Event() if step_mode else None
         if self._fw_step_gate:
             self._fw_step_gate.set()  # start unblocked; flasher clears it at each step
 
         self._fw_log(f"FW trace file: {self._fw_log_file}")
+        self._fw_using_shared_transport = shared_transport_desc is not None
 
         self._fw_thread = threading.Thread(
             target=self._fw_worker,
-            args=(ip, bridge_port, firmware, flash_offset, flash_params,
-                  flash_baud, step_mode, cmd_timeout),
+            args=(use_usb, ip, bridge_port, firmware, flash_offset, flash_params,
+                  flash_baud, step_mode, cmd_timeout, usb_write_timeout_ms,
+                  usb_fw_pad_bytes, usb_vid, usb_pid,
+                  ),
             daemon=True)
         self._fw_thread.start()
 
@@ -1694,6 +2345,173 @@ class App(tk.Tk):
         if self._fw_step_gate:
             self._fw_step_gate.set()
         self._fw_status_var.set("Cancelling...")
+
+    def _fw_usb_speed_switch_start(self, target: str):
+        target = target.strip().lower()
+        if target not in {"fs", "hs"}:
+            messagebox.showerror("FW Update", "Invalid USB speed target.")
+            return
+        if self._fw_thread and self._fw_thread.is_alive():
+            messagebox.showwarning("FW Update", "A firmware operation is already running.")
+            return
+        if self.conn_type_var.get() != "USB":
+            messagebox.showerror("FW Update", "Select USB transport before using USB speed switch.")
+            return
+
+        try:
+            cmd_timeout = float(self._fw_timeout_var.get().strip())
+            if cmd_timeout <= 0:
+                raise ValueError("Timeout must be positive")
+            usb_write_timeout_ms = int(self._fw_usb_write_timeout_var.get().strip())
+            if usb_write_timeout_ms <= 0:
+                raise ValueError("USB write timeout must be positive")
+            usb_fw_pad_bytes = self._usb_fw_pad_bytes()
+            usb_vid, usb_pid = self._usb_vid_pid()
+        except ValueError as exc:
+            messagebox.showerror("FW Update", str(exc))
+            return
+
+        owner = f"USB switch to {target.upper()}"
+        try:
+            self._runtime_api_block_begin(owner)
+        except RuntimeError as exc:
+            messagebox.showinfo("FW Update", str(exc))
+            return
+
+        self._fw_log_file = self._fw_make_log_path()
+        self._fw_log_text.delete("1.0", "end")
+        self._fw_progress_var.set(0.0)
+        self._fw_status_var.set(f"Switching USB to {target.upper()}...")
+        self._fw_set_action_buttons_state(tk.DISABLED)
+        self._fw_btn_cancel.configure(state=tk.DISABLED)
+        self._fw_log(f"USB speed switch trace file: {self._fw_log_file}")
+
+        self._fw_thread = threading.Thread(
+            target=self._fw_usb_speed_switch_worker,
+            args=(target, owner, cmd_timeout, usb_write_timeout_ms,
+                  usb_fw_pad_bytes, usb_vid, usb_pid),
+            daemon=True,
+        )
+        self._fw_thread.start()
+
+    def _fw_usb_speed_switch_worker(
+        self,
+        target: str,
+        owner: str,
+        cmd_timeout: float,
+        usb_write_timeout_ms: int,
+        usb_fw_pad_bytes: int,
+        usb_vid: int,
+        usb_pid: int,
+    ):
+        transport = None
+        shared_usb_client = self._fw_connected_usb_client()
+        using_shared_usb = False
+        target_label = target.upper()
+        try:
+            if shared_usb_client is not None:
+                self._fw_log("Requesting exclusive access to the connected USB session...")
+                transport = shared_usb_client.acquire_exclusive_device(owner, timeout=10.0)
+                using_shared_usb = True
+                transport_name = "shared USB speed-control session"
+                self._fw_log("Exclusive USB session granted.")
+            else:
+                self._fw_log(f"Opening STM USB bridge VID={usb_vid:04X} PID={usb_pid:04X}...")
+                transport = self._open_usb_flash_bridge(usb_vid, usb_pid)
+                transport_name = "USB speed-control session"
+                self._fw_log("USB bridge opened.")
+
+            speed = str(getattr(transport, "usb_speed_name", "unknown"))
+            mps = int(getattr(transport, "fw_out_chunk_size_detected",
+                              getattr(transport, "fw_out_chunk_size", 0)) or 0)
+            self._fw_log(f"Current USB speed before switch: speed={speed}, EP1 OUT MPS={mps}.")
+
+            if hasattr(transport, "fw_write_timeout_ms"):
+                transport.fw_write_timeout_ms = usb_write_timeout_ms
+            if hasattr(transport, "pad_fw_writes_to_bytes"):
+                transport.pad_fw_writes_to_bytes = usb_fw_pad_bytes
+            if usb_fw_pad_bytes:
+                transport.declare_fw_writes_as_bytes = usb_fw_pad_bytes
+            api_timeout = max(2.0, float(cmd_timeout))
+            transport.settimeout(api_timeout)
+
+            api_transport = StmEspFwApiTransport(
+                transport,
+                log=self._fw_log,
+                transport_name=transport_name,
+                settle_sec=0.0,
+                seq_mode=STM_FW_SEQ_UINT8_WRAP,
+            )
+            api_transport.use_usb_wire_valid_lengths = usb_fw_pad_bytes > 0
+            api_transport.settimeout(api_timeout)
+
+            self._fw_log(
+                f"Requesting STM USB runtime switch to {target_label} "
+                f"(wire pad={usb_fw_pad_bytes} bytes, write timeout={usb_write_timeout_ms} ms)."
+            )
+            try:
+                if target == "fs":
+                    api_transport.force_usb_fs()
+                else:
+                    api_transport.restore_usb_hs()
+                self._fw_log(f"USB switch-to-{target_label} API acknowledged.")
+            except (ConnectionError, OSError, TimeoutError) as exc:
+                self._fw_log(
+                    f"USB switch-to-{target_label} API dropped the current link "
+                    f"({type(exc).__name__}: {exc}); waiting for re-enumeration."
+                )
+
+            try:
+                transport.close()
+            except Exception:
+                pass
+            transport = None
+
+            if using_shared_usb and shared_usb_client is not None:
+                self._mark_shared_usb_disconnected(
+                    shared_usb_client,
+                    f"manual USB switch to {target_label}",
+                    self._fw_log,
+                )
+                using_shared_usb = False
+                shared_usb_client = None
+
+            if target == "fs":
+                probe = self._wait_usb_flash_bridge_fs(
+                    usb_vid,
+                    usb_pid,
+                    timeout_s=10.0,
+                    log=self._fw_log,
+                )
+            else:
+                probe = self._wait_usb_flash_bridge_hs(
+                    usb_vid,
+                    usb_pid,
+                    timeout_s=10.0,
+                    log=self._fw_log,
+                )
+            probe.close()
+            self._fw_set_progress(1.0, f"USB switched to {target_label}")
+            self._fw_log(f"USB speed switch to {target_label} confirmed.")
+
+        except Exception as exc:
+            self._fw_set_progress(0.0, f"USB switch to {target_label} failed")
+            self._fw_log(f"ERROR: USB switch to {target_label} failed: {type(exc).__name__}: {exc}")
+        finally:
+            if transport is not None:
+                try:
+                    transport.close()
+                except Exception:
+                    pass
+            self._runtime_api_block_end(owner)
+            if self._fw_log_file:
+                self._fw_log(f"USB speed switch trace saved to {self._fw_log_file}")
+
+            def _restore():
+                self._fw_set_action_buttons_state(tk.NORMAL)
+                self._fw_btn_cancel.configure(state=tk.DISABLED)
+
+            self.after(0, _restore)
 
     def _fw_poll_step_gate(self):
         """
@@ -1732,7 +2550,7 @@ class App(tk.Tk):
                   font=("Segoe UI", 10, "bold")).pack(padx=12, pady=(12, 4))
         ttk.Label(
             dlg,
-            text="Programming traffic on the FW tab does not expect a TCP echo from STM; continue after the expected bootloader reply/ack.",
+            text="Programming traffic on the FW tab does not expect a transport echo from STM; continue after the expected bootloader reply/ack.",
             wraplength=460,
             justify=tk.LEFT,
         ).pack(padx=12, pady=(0, 4), anchor="w")
@@ -1777,16 +2595,18 @@ class App(tk.Tk):
 
         dlg.protocol("WM_DELETE_WINDOW", _next_step)  # X button = next step
 
-    def _fw_worker(self, ip: str, port: int, firmware: bytes,
+    def _fw_worker(self, use_usb: bool, ip: str, port: int, firmware: bytes,
                    flash_offset: int, flash_params: int, flash_baud: int,
-                   step_mode: bool, cmd_timeout: float):
+                   step_mode: bool, cmd_timeout: float, usb_write_timeout_ms: int,
+                   usb_fw_pad_bytes: int, usb_vid: int, usb_pid: int):
         """
-        Background thread: connect to STM bridge port and run the full
+        Background thread: open the selected STM API transport and run the full
         ESP flash sequence (matches: esputil -fp <params> flash <offset> fw.bin).
 
-        The STM is treated as a transparent TCP<->UART bridge here.
-        No TCP echo is expected for programming traffic; the only expected
-        RX frames are ESP ROM bootloader replies/acks coming back via STM.
+        The STM firmware now expects display FW update commands on the normal
+        API path. Each ESP SLIP frame is wrapped in API_ESP_FW_WRITE, and the
+        utility sends API_ESP_FW_END at the required
+        protocol points.
 
         Sequence:
           1. SYNC
@@ -1795,39 +2615,171 @@ class App(tk.Tk):
           4. SPI_ATTACH
           5. SPI_SET_PARAMS
           6. FLASH_BEGIN (erase)
-          7. FLASH_DATA  (4 KB blocks, with F1/F2 patching)
+          7. FLASH_DATA  (256-byte blocks, with F1/F2 patching)
           8. FLASH_END   (reboot)
         """
-        sock = None
+        transport = None
+        api_transport = None
+        transport_name = "USB HS/FS bulk" if use_usb else f"Ethernet {ip}:{port}"
+        owner = "ESP FW Update"
+        shared_net_client = self._fw_connected_net_client() if not use_usb else None
+        shared_usb_client = self._fw_connected_usb_client() if use_usb else None
+        using_shared_net = False
+        using_shared_usb = False
+        session_started = False
+        usb_runtime_fs_active = False
         try:
-            self._fw_log(f"Connecting to STM bridge at {ip}:{port}...")
-            sock = socket.create_connection((ip, port), timeout=10.0)
-            sock.settimeout(2.0)
-            self._fw_log("Connected to bridge.")
+            if use_usb:
+                if shared_usb_client is not None:
+                    self._fw_log("Requesting exclusive access to the connected USB session...")
+                    transport = shared_usb_client.acquire_exclusive_device(owner, timeout=10.0)
+                    transport_name = "shared USB HS/FS session"
+                    using_shared_usb = True
+                    self._fw_log("Exclusive USB session granted.")
+                else:
+                    self._fw_log(f"Opening STM USB HS/FS bridge VID={usb_vid:04X} PID={usb_pid:04X}...")
+                    transport = self._open_usb_flash_bridge(usb_vid, usb_pid)
+                    self._fw_log("USB bridge opened.")
+                if hasattr(transport, "fw_write_timeout_ms"):
+                    transport.fw_write_timeout_ms = usb_write_timeout_ms
+            else:
+                if shared_net_client is not None:
+                    self._fw_log("Requesting exclusive access to the connected Ethernet session...")
+                    transport = shared_net_client.acquire_exclusive_socket(owner, timeout=10.0)
+                    transport_name = f"shared Ethernet {ip}:{port}"
+                    using_shared_net = True
+                    self._fw_log("Exclusive Ethernet session granted.")
+                else:
+                    self._fw_log(f"Connecting to STM bridge at {ip}:{port}...")
+                    transport = socket.create_connection((ip, port), timeout=10.0)
+                    self._fw_log("Connected to bridge.")
+            api_read_timeout = max(2.0, float(cmd_timeout))
+            transport.settimeout(api_read_timeout)
             self._fw_log(f"Using FW base timeout: {self._fw_fmt_ms(cmd_timeout)}")
-            self._fw_log(format_fw_update_plan(len(firmware), flash_offset, flash_params, flash_baud))
+            self._fw_log(f"Using STM API read timeout: {self._fw_fmt_ms(api_read_timeout)}")
+            if use_usb:
+                self._fw_log(f"Using USB FW write timeout: {usb_write_timeout_ms} ms")
+            self._fw_log(f"Transport: {transport_name}")
+            api_transport = StmEspFwApiTransport(
+                transport,
+                log=self._fw_log,
+                transport_name=transport_name,
+                settle_sec=STM_FW_START_SETTLE_SEC,
+                seq_mode=STM_FW_SEQ_UINT8_WRAP,
+            )
+            api_transport.use_usb_wire_valid_lengths = use_usb
+
+            runtime_flash_baud = 115200
+            flash_block_size = USB_FLASH_DATA_BLOCK_SIZE if use_usb else 256
+            if flash_baud != runtime_flash_baud:
+                self._fw_log(
+                    f"USB ESP FW update high-baud path disabled: requested {flash_baud}, "
+                    f"using runtime flash baud {runtime_flash_baud}."
+                )
+            if use_usb:
+                usb_mps = int(getattr(transport, "fw_out_chunk_size", 64))
+                detected_mps = int(getattr(transport, "fw_out_chunk_size_detected", usb_mps))
+                usb_speed = str(getattr(transport, "usb_speed_name", "unknown"))
+                usb_declared_len = usb_fw_pad_bytes if usb_fw_pad_bytes else 0
+                if hasattr(transport, "pad_fw_writes_to_bytes"):
+                    transport.pad_fw_writes_to_bytes = usb_fw_pad_bytes
+                if usb_fw_pad_bytes:
+                    transport.declare_fw_writes_as_bytes = usb_declared_len
+                self._fw_log(
+                    f"USB FW update sends fixed {usb_fw_pad_bytes}-byte USB OUT frames with bytes[1:2]={usb_declared_len}."
+                )
+                self._fw_log(
+                    f"USB FW update uses uint8 sequence wrap; unpadded API frame <= {STM_FW_API_SAFE_MAX_LEN} bytes, declared API length = {usb_declared_len}, wire frame = {usb_fw_pad_bytes} bytes ({usb_speed}, detected EP1 OUT MPS {detected_mps})."
+                )
+                self._fw_log(
+                    f"USB ESP FLASH_DATA block size forced to {flash_block_size} bytes so STM header + SLIP escapes stay within safe OUT writes."
+                )
+                self._fw_log(
+                    f"USB FLASH_DATA pacing: {USB_FLASH_DATA_PACE_SEC * 1000:.0f} ms between blocks."
+                )
+
+            api_transport.settimeout(api_read_timeout)
+
+            if use_usb and not self._usb_bridge_is_fs(transport):
+                self._fw_log("Requesting STM USB runtime switch to FS before API_ESP_FW_START...")
+                try:
+                    api_transport.force_usb_fs()
+                    self._fw_log("USB runtime FS request acknowledged; waiting for re-enumeration...")
+                except (ConnectionError, OSError, TimeoutError) as exc:
+                    self._fw_log(
+                        "USB runtime FS request dropped the current link; "
+                        f"waiting for FS re-enumeration ({type(exc).__name__}: {exc})."
+                    )
+                try:
+                    transport.close()
+                except Exception:
+                    pass
+                if using_shared_usb and shared_usb_client is not None:
+                    self._mark_shared_usb_disconnected(
+                        shared_usb_client,
+                        "ESP FW explicit HS-to-FS runtime switch",
+                        self._fw_log,
+                    )
+                    using_shared_usb = False
+                    shared_usb_client = None
+                transport = self._wait_usb_flash_bridge_fs(
+                    usb_vid,
+                    usb_pid,
+                    timeout_s=8.0,
+                    log=self._fw_log,
+                )
+                usb_runtime_fs_active = True
+                if hasattr(transport, "fw_write_timeout_ms"):
+                    transport.fw_write_timeout_ms = usb_write_timeout_ms
+                if hasattr(transport, "pad_fw_writes_to_bytes"):
+                    transport.pad_fw_writes_to_bytes = usb_fw_pad_bytes
+                if usb_fw_pad_bytes:
+                    transport.declare_fw_writes_as_bytes = usb_declared_len
+                transport.settimeout(api_read_timeout)
+                api_transport.replace_base(transport, "USB FS runtime session")
+                transport_name = "USB FS runtime session"
+            elif use_usb:
+                self._fw_log("USB bridge is already FS; API_ESP_FW_START will run without re-enumeration.")
+
+            api_transport.start_session()
+            session_started = True
+
+            self._fw_log(
+                format_fw_update_plan(
+                    len(firmware),
+                    flash_offset,
+                    flash_params,
+                    runtime_flash_baud,
+                    flash_block_size,
+                )
+            )
 
             fl = ESPFlasher(
-                sock=sock,
+                sock=api_transport,
                 log=self._fw_log,
                 progress=self._fw_set_progress,
                 step_gate=self._fw_step_gate,
                 cmd_timeout=cmd_timeout,  # Pass user-configured timeout
                 on_retry_prompt=self._fw_retry_prompt_dialog,
                 trace=self._fw_trace_log,
+                transport_name=transport_name,
+                on_baud_change=None,
+                flash_block_size=flash_block_size,
+                flash_data_pace_sec=USB_FLASH_DATA_PACE_SEC if use_usb else 0.0,
             )
             if self._fw_cancel_event:
                 fl._cancel = self._fw_cancel_event
             # Store reference so UI "Automate" button can flip auto_mode
             self._fw_flasher = fl
+            fl.auto_mode = not step_mode
 
             if not fl.sync():
                 raise RuntimeError("Could not sync with ESP bootloader. "
                                    "Ensure the ESP is in download mode.")
             fl.detect_chip()
-            fl.change_baudrate(flash_baud)
+            fl.change_baudrate(runtime_flash_baud)
             fl.spi_attach()
-            fl.flash_file(firmware, flash_offset, flash_params, flash_baud)
+            fl.flash_file(firmware, flash_offset, flash_params, runtime_flash_baud)
             fl.reboot()
 
             chip_name = CHIP_NAMES.get(fl.chip_id, f"0x{fl.chip_id:08X}")
@@ -1844,19 +2796,72 @@ class App(tk.Tk):
             self._fw_log(f"UNEXPECTED ERROR: {type(e).__name__}: {e}")
             self._fw_set_progress(0.0, f"Error: {e}")
         finally:
-            if sock:
+            if session_started and api_transport is not None:
                 try:
-                    sock.close()
+                    api_transport.end_session()
+                except Exception as exc:
+                    self._fw_log(f"WARN: Failed to send API_ESP_FW_END: {exc}")
+            if use_usb and usb_runtime_fs_active and api_transport is not None:
+                try:
+                    api_transport.restore_usb_hs()
+                    self._fw_log("USB runtime restore-to-HS request sent after ESP FW update.")
+                except Exception as exc:
+                    self._fw_log(f"WARN: Failed to request USB runtime restore-to-HS: {exc}")
+                finally:
+                    usb_runtime_fs_active = False
+                try:
+                    if transport:
+                        transport.close()
+                        transport = None
+                    hs_probe = self._wait_usb_flash_bridge_hs(
+                        usb_vid,
+                        usb_pid,
+                        timeout_s=8.0,
+                        log=self._fw_log,
+                    )
+                    hs_probe.close()
+                except Exception as exc:
+                    self._fw_log(f"WARN: USB runtime restore-to-HS was not confirmed: {exc}")
+            if transport:
+                try:
+                    if not using_shared_net:
+                        transport.close()
+                except Exception:
+                    pass
+            if using_shared_net and shared_net_client is not None:
+                try:
+                    shared_net_client.release_exclusive_socket(owner)
                 except Exception:
                     pass
             if self._fw_log_file:
                 self._fw_log(f"FW trace saved to {self._fw_log_file}")
             self._fw_flasher = None
+            self._fw_using_shared_transport = False
+            self._runtime_api_block_end(owner)
             # Re-enable controls on main thread
             def _restore():
-                self._fw_btn_flash.configure(state=tk.NORMAL)
+                self._fw_set_action_buttons_state(tk.NORMAL)
                 self._fw_btn_cancel.configure(state=tk.DISABLED)
             self.after(0, _restore)
+
+    def _fw_connected_net_client(self) -> NetClient | None:
+        if isinstance(self.client, NetClient):
+            return self.client
+        return None
+
+    def _fw_connected_usb_client(self) -> USBClient | None:
+        if isinstance(self.client, USBClient):
+            return self.client
+        return None
+
+    def _fw_shared_transport_desc(self, use_usb: bool, ip: str, port: int) -> str | None:
+        if use_usb:
+            if self._fw_connected_usb_client() is not None:
+                return "shared USB HS/FS session"
+            return None
+        if self._fw_connected_net_client() is not None:
+            return f"shared Ethernet {ip}:{port}"
+        return None
 
     def _build_cps_fw_tab(self):
         self._cpsfw_boot_path = tk.StringVar(value=CPS_BOOT_HEX_DEFAULT)
@@ -1864,6 +2869,8 @@ class App(tk.Tk):
         self._cpsfw_port_var = tk.StringVar(value=str(CPS_API_PORT_DEFAULT))
         self._cpsfw_chunk_var = tk.StringVar(value=str(CPS_DEFAULT_CHUNK_SIZE))
         self._cpsfw_timeout_var = tk.StringVar(value="3.0")
+        self._cpsfw_write_delay_ms_var = tk.StringVar(value="0")
+        self._cpsfw_usb_write_timeout_ms_var = tk.StringVar(value=str(USB_FW_WRITE_TIMEOUT_MS_DEFAULT))
         self._cpsfw_step_mode = tk.BooleanVar(value=False)
         self._cpsfw_progress_var = tk.DoubleVar(value=0.0)
         self._cpsfw_boot_progress_var = tk.DoubleVar(value=0.0)
@@ -1899,10 +2906,11 @@ class App(tk.Tk):
             info,
             text=(
                 "This tab streams raw Intel HEX text to STM with the BEGIN / DATA / END_IMAGE / EXECUTE API. "
-                "If the top-bar Ethernet session is already connected, the CPS FW updater temporarily takes "
-                "exclusive control of that NetClient socket, pauses polling/manual traffic, and then returns "
-                "the socket after the operation finishes. If Ethernet is not connected, the tab falls back to "
-                "its own temporary TCP session."
+                "In Ethernet mode, if the top-bar session is already connected, the CPS FW updater temporarily "
+                "takes exclusive control of that NetClient socket, pauses polling/manual traffic, and then "
+                "returns the socket after the operation finishes. If Ethernet is not connected, the tab falls "
+                "back to its own temporary TCP session. In USB mode, the tab uses the STM USB HS/FS bulk bridge; "
+                "disconnect the live USB console session first so the updater can open the device directly."
             ),
             wraplength=980,
             justify=tk.LEFT,
@@ -1954,6 +2962,14 @@ class App(tk.Tk):
 
         row2 = ttk.Frame(cfg_lf)
         row2.pack(fill=tk.X, padx=8, pady=(0, 8))
+        ttk.Label(row2, text="Write delay (ms):").pack(side=tk.LEFT)
+        ttk.Entry(row2, textvariable=self._cpsfw_write_delay_ms_var, width=8).pack(
+            side=tk.LEFT, padx=(4, 16)
+        )
+        ttk.Label(row2, text="USB write timeout (ms):").pack(side=tk.LEFT)
+        ttk.Entry(row2, textvariable=self._cpsfw_usb_write_timeout_ms_var, width=8).pack(
+            side=tk.LEFT, padx=(4, 16)
+        )
         self._cpsfw_step_chk = ttk.Checkbutton(
             row2,
             text="Ask before each CPS FW command/chunk",
@@ -2196,12 +3212,14 @@ class App(tk.Tk):
             return self.client
         return None
 
+    def _cpsfw_usb_requested(self) -> bool:
+        return self.conn_type_var.get() == "USB"
+
     def _cpsfw_require_transport_ready(self) -> bool:
-        if isinstance(self.client, USBClient):
+        if self._cpsfw_usb_requested() and isinstance(self.client, USBClient):
             messagebox.showerror(
                 "CPS FW upd",
-                "CPS FW update uses the Ethernet API path. Disconnect USB mode first, or switch the top bar "
-                "back to Ethernet.",
+                "Disconnect the live USB console session before starting CPS FW update over USB HS/FS.",
             )
             return False
         if self._cpsfw_thread is not None and self._cpsfw_thread.is_alive():
@@ -2209,17 +3227,20 @@ class App(tk.Tk):
             return False
         return True
 
-    def _cpsfw_common_target(self) -> tuple[str, int, float] | None:
+    def _cpsfw_common_target(self) -> tuple[bool, str, int, float] | None:
+        use_usb = self._cpsfw_usb_requested()
         ip = self.ip_var.get().strip()
-        if not ip:
-            messagebox.showerror("CPS FW upd", "Please enter the target IP address in the top bar.")
-            return None
+        port = 0
+        if not use_usb:
+            if not ip:
+                messagebox.showerror("CPS FW upd", "Please enter the target IP address in the top bar.")
+                return None
 
-        try:
-            port = int(self._cpsfw_port_var.get().strip())
-        except ValueError:
-            messagebox.showerror("CPS FW upd", "Invalid API port number.")
-            return None
+            try:
+                port = int(self._cpsfw_port_var.get().strip())
+            except ValueError:
+                messagebox.showerror("CPS FW upd", "Invalid API port number.")
+                return None
 
         try:
             timeout = float(self._cpsfw_timeout_var.get().strip())
@@ -2229,7 +3250,7 @@ class App(tk.Tk):
             messagebox.showerror("CPS FW upd", "Invalid command timeout. Use a positive value in seconds.")
             return None
 
-        return ip, port, timeout
+        return use_usb, ip, port, timeout
 
     def _cpsfw_start(self):
         if not self._cpsfw_require_transport_ready():
@@ -2263,33 +3284,67 @@ class App(tk.Tk):
             messagebox.showerror("CPS FW upd", "Invalid chunk size.")
             return
         if chunk_size not in CPS_CHUNK_SIZES:
-            messagebox.showerror("CPS FW upd", "Chunk size must be 256 or 512 bytes.")
+            messagebox.showerror("CPS FW upd", "Chunk size must be 256 or 511 bytes.")
+            return
+
+        try:
+            write_delay_ms = float(self._cpsfw_write_delay_ms_var.get().strip())
+            if write_delay_ms < 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("CPS FW upd", "Invalid write delay. Use zero or a positive value in milliseconds.")
+            return
+
+        try:
+            usb_write_timeout_ms = int(self._cpsfw_usb_write_timeout_ms_var.get().strip())
+            if usb_write_timeout_ms <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("CPS FW upd", "Invalid USB write timeout. Use a positive value in milliseconds.")
             return
 
         target = self._cpsfw_common_target()
         if target is None:
             return
-        ip, port, timeout = target
+        use_usb, ip, port, timeout = target
         step_mode = self._cpsfw_step_mode.get()
         shared_client = self._cpsfw_connected_net_client()
-        transport_mode = (
-            "shared top-bar Ethernet socket"
-            if shared_client is not None
-            else "temporary CPS-only socket"
-        )
+        if use_usb:
+            transport_mode = "USB HS/FS bulk bridge"
+        else:
+            transport_mode = (
+                "shared top-bar Ethernet socket"
+                if shared_client is not None
+                else "temporary CPS-only socket"
+            )
 
-        msg = (
-            f"Target IP      : {ip}\n"
-            f"API port       : {port}\n"
-            f"Transport      : {transport_mode}\n"
-            f"Boot HEX size  : {len(boot_hex)} bytes\n"
-            f"App HEX size   : {len(app_hex)} bytes\n"
-            f"Chunk size     : {chunk_size} bytes\n"
-            f"Timeout        : {timeout:.1f} s\n"
-            f"Manual pacing  : {'ON' if step_mode else 'OFF'}\n\n"
-            f"Proceed with CPS FW update?"
-        )
+        msg_lines = [
+            f"Transport      : {transport_mode}",
+        ]
+        if not use_usb:
+            msg_lines.extend([f"Target IP      : {ip}", f"API port       : {port}"])
+        msg_lines.extend([
+            f"Boot HEX size  : {len(boot_hex)} bytes",
+            f"App HEX size   : {len(app_hex)} bytes",
+            f"Chunk size     : {chunk_size} bytes",
+            f"Timeout        : {timeout:.1f} s",
+            f"Write delay    : {write_delay_ms:.0f} ms",
+        ])
+        if use_usb:
+            msg_lines.append(f"USB write TO   : {usb_write_timeout_ms} ms")
+        msg_lines.extend([
+            f"Manual pacing  : {'ON' if step_mode else 'OFF'}",
+            "",
+            "Proceed with CPS FW update?",
+        ])
+        msg = "\n".join(msg_lines)
         if not messagebox.askyesno("CPS FW upd", msg):
+            return
+
+        try:
+            self._runtime_api_block_begin("CPS FW update")
+        except RuntimeError as exc:
+            messagebox.showinfo("CPS FW upd", str(exc))
             return
 
         self._cpsfw_log_text.delete("1.0", "end")
@@ -2310,17 +3365,44 @@ class App(tk.Tk):
         self._cpsfw_log("CPS FW update requested")
         self._cpsfw_log(f"Boot HEX : {boot_path}")
         self._cpsfw_log(f"App HEX  : {app_path}")
-        self._cpsfw_log(f"Target   : {ip}:{port}")
         self._cpsfw_log(f"Transport: {transport_mode}")
+        if not use_usb:
+            self._cpsfw_log(f"Target   : {ip}:{port}")
         self._cpsfw_log(f"Chunk    : {chunk_size}")
         self._cpsfw_log(f"Timeout  : {timeout:.1f} s")
+        self._cpsfw_log(f"Delay    : {write_delay_ms:.0f} ms before each command")
+        if use_usb:
+            try:
+                usb_vid, usb_pid = self._usb_vid_pid()
+            except ValueError as exc:
+                messagebox.showerror("CPS FW upd", str(exc))
+                self._runtime_api_block_end("CPS FW update")
+                self._cpsfw_set_busy(False)
+                return
+            self._cpsfw_log(f"USB VID/PID: {usb_vid:04X}:{usb_pid:04X}")
+            self._cpsfw_log(f"USB write timeout: {usb_write_timeout_ms} ms")
+        else:
+            usb_vid, usb_pid = 0, 0
         self._cpsfw_log(f"Step mode: {'ON' if step_mode else 'OFF'}")
         self._cpsfw_log(f"Trace    : {self._cpsfw_log_file}")
         self._cpsfw_log("=" * 72)
 
         self._cpsfw_thread = threading.Thread(
             target=self._cpsfw_worker,
-            args=(shared_client, ip, port, boot_hex, app_hex, chunk_size, timeout),
+            args=(
+                shared_client,
+                use_usb,
+                ip,
+                port,
+                boot_hex,
+                app_hex,
+                chunk_size,
+                timeout,
+                write_delay_ms / 1000.0,
+                usb_write_timeout_ms,
+                usb_vid,
+                usb_pid,
+            ),
             daemon=True,
         )
         self._cpsfw_thread.start()
@@ -2440,12 +3522,117 @@ class App(tk.Tk):
 
         dlg.protocol("WM_DELETE_WINDOW", _cancel_update)
 
-    def _cpsfw_worker(self, shared_client: NetClient | None, ip: str, port: int, boot_hex: bytes,
-                      app_hex: bytes, chunk_size: int, timeout: float):
+    def _cpsfw_worker(self, shared_client: NetClient | None, use_usb: bool, ip: str, port: int,
+                      boot_hex: bytes, app_hex: bytes, chunk_size: int, timeout: float,
+                      inter_command_delay_s: float, usb_write_timeout_ms: int,
+                      usb_vid: int, usb_pid: int):
         owner = "CPS FW update"
         shared_sock = None
+        transport_name = "USB HS/FS bulk bridge" if use_usb else f"TCP {ip}:{port}"
         try:
-            if shared_client is not None:
+            usb_sock_factory = None
+            usb_prepare_before_begin = None
+            usb_restore_after_done = None
+            if use_usb:
+                cps_usb_runtime_fs_active = False
+                if chunk_size != 256:
+                    self._cpsfw_log(
+                        f"USB CPS FW chunk size forced from {chunk_size} to 256 bytes."
+                    )
+                    chunk_size = 256
+
+                def usb_sock_factory():
+                    bridge = self._open_usb_flash_bridge(usb_vid, usb_pid)
+                    if hasattr(bridge, "fw_write_timeout_ms"):
+                        bridge.fw_write_timeout_ms = usb_write_timeout_ms
+                    detected_mps = int(getattr(bridge, "fw_out_chunk_size_detected", getattr(bridge, "fw_out_chunk_size", 64)))
+                    if hasattr(bridge, "pad_fw_writes_to_bytes"):
+                        bridge.pad_fw_writes_to_bytes = 0
+                    self._cpsfw_log(
+                        f"USB CPS FW bridge opened (speed={getattr(bridge, 'usb_speed_name', 'unknown')}, EP1 OUT MPS={detected_mps})."
+                    )
+                    bridge.settimeout(timeout)
+                    return bridge
+
+                def usb_prepare_before_begin(current_sock):
+                    nonlocal cps_usb_runtime_fs_active
+                    if self._usb_bridge_is_fs(current_sock):
+                        self._cpsfw_log("USB CPS FW bridge is already FS; CPS_FW_UPDATE_BEGIN will run without re-enumeration.")
+                        return current_sock
+
+                    self._cpsfw_log("Requesting STM USB runtime switch to FS before CPS_FW_UPDATE_BEGIN...")
+                    ctl = StmEspFwApiTransport(
+                        current_sock,
+                        log=self._cpsfw_log,
+                        transport_name="USB CPS runtime speed-control session",
+                        settle_sec=0.0,
+                        seq_mode=STM_FW_SEQ_UINT8_WRAP,
+                    )
+                    ctl.settimeout(max(2.0, float(timeout)))
+                    try:
+                        ctl.force_usb_fs()
+                        self._cpsfw_log("USB runtime FS request acknowledged; waiting for re-enumeration...")
+                    except (ConnectionError, OSError, TimeoutError) as exc:
+                        self._cpsfw_log(
+                            "USB runtime FS request dropped the current link; "
+                            f"waiting for FS re-enumeration ({type(exc).__name__}: {exc})."
+                        )
+                    try:
+                        current_sock.close()
+                    except Exception:
+                        pass
+                    bridge = self._wait_usb_flash_bridge_fs(
+                        usb_vid,
+                        usb_pid,
+                        timeout_s=8.0,
+                        log=self._cpsfw_log,
+                    )
+                    if hasattr(bridge, "fw_write_timeout_ms"):
+                        bridge.fw_write_timeout_ms = usb_write_timeout_ms
+                    if hasattr(bridge, "pad_fw_writes_to_bytes"):
+                        bridge.pad_fw_writes_to_bytes = 0
+                    bridge.settimeout(timeout)
+                    cps_usb_runtime_fs_active = True
+                    return bridge
+
+                def usb_restore_after_done(current_sock):
+                    nonlocal cps_usb_runtime_fs_active
+                    if not cps_usb_runtime_fs_active:
+                        return
+                    self._cpsfw_log("Requesting STM USB runtime restore to HS after CPS FW update...")
+                    ctl = StmEspFwApiTransport(
+                        current_sock,
+                        log=self._cpsfw_log,
+                        transport_name="USB CPS FS runtime session",
+                        settle_sec=0.0,
+                        seq_mode=STM_FW_SEQ_UINT8_WRAP,
+                    )
+                    ctl.settimeout(max(2.0, float(timeout)))
+                    try:
+                        ctl.restore_usb_hs()
+                        self._cpsfw_log("USB runtime restore-to-HS request sent after CPS FW update.")
+                    except (ConnectionError, OSError, TimeoutError) as exc:
+                        self._cpsfw_log(
+                            "USB runtime restore-to-HS dropped the FS link after request "
+                            f"({type(exc).__name__}: {exc})."
+                        )
+                    try:
+                        current_sock.close()
+                    except Exception:
+                        pass
+                    try:
+                        hs_probe = self._wait_usb_flash_bridge_hs(
+                            usb_vid,
+                            usb_pid,
+                            timeout_s=8.0,
+                            log=self._cpsfw_log,
+                        )
+                        hs_probe.close()
+                    except Exception as exc:
+                        self._cpsfw_log(f"[WARN] USB runtime restore-to-HS was not confirmed: {exc}")
+                    finally:
+                        cps_usb_runtime_fs_active = False
+            elif shared_client is not None:
                 self._cpsfw_log("Requesting exclusive access to the connected Ethernet socket...")
                 shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=10.0)
                 self._cpsfw_log("Exclusive socket granted. Polling/manual traffic is paused for CPS FW update.")
@@ -2465,10 +3652,16 @@ class App(tk.Tk):
                 step_gate=self._cpsfw_step_gate,
                 on_step_pause=lambda ctx: self.after(0, lambda ctx=ctx: self._cpsfw_set_pending_step(ctx)),
                 sock=shared_sock,
+                sock_factory=usb_sock_factory,
+                transport_name=transport_name,
+                inter_command_delay_s=inter_command_delay_s,
+                on_transport_prepare_before_begin=usb_prepare_before_begin,
+                on_transport_restore_after_done=usb_restore_after_done,
             )
             self._cpsfw_updater = updater
             updater.run()
         finally:
+            self._runtime_api_block_end(owner)
             if shared_client is not None:
                 try:
                     shared_client.release_exclusive_socket(owner)
@@ -2483,22 +3676,36 @@ class App(tk.Tk):
         target = self._cpsfw_common_target()
         if target is None:
             return
-        ip, port, timeout = target
+        use_usb, ip, port, timeout = target
         shared_client = self._cpsfw_connected_net_client()
+        try:
+            usb_vid, usb_pid = self._usb_vid_pid() if use_usb else (0, 0)
+        except ValueError as exc:
+            messagebox.showerror("CPS FW upd", str(exc))
+            return
 
         self._cpsfw_set_busy(True, mode="status")
         self._cpsfw_status_var.set("Querying CPS FW status...")
         self._cpsfw_thread = threading.Thread(
             target=self._cpsfw_query_worker,
-            args=(shared_client, ip, port, timeout),
+            args=(shared_client, use_usb, ip, port, timeout, usb_vid, usb_pid),
             daemon=True,
         )
         self._cpsfw_thread.start()
 
-    def _cpsfw_query_worker(self, shared_client: NetClient | None, ip: str, port: int, timeout: float):
+    def _cpsfw_query_worker(self, shared_client: NetClient | None, use_usb: bool, ip: str, port: int,
+                            timeout: float, usb_vid: int, usb_pid: int):
         owner = "CPS FW status"
         try:
-            if shared_client is not None:
+            if use_usb:
+                self._cpsfw_log(f"Opening STM USB HS/FS bridge for STATUS query VID={usb_vid:04X} PID={usb_pid:04X}...")
+                shared_sock = self._open_usb_flash_bridge(usb_vid, usb_pid)
+                try:
+                    shared_sock.settimeout(timeout)
+                    reply = query_status_on_socket(shared_sock, timeout, log=self._cpsfw_log)
+                finally:
+                    shared_sock.close()
+            elif shared_client is not None:
                 self._cpsfw_log("Borrowing the connected Ethernet socket for STATUS query...")
                 shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=5.0)
                 try:
@@ -2521,12 +3728,21 @@ class App(tk.Tk):
         target = self._cpsfw_common_target()
         if target is None:
             return
-        ip, port, timeout = target
+        use_usb, ip, port, timeout = target
         shared_client = self._cpsfw_connected_net_client()
+        try:
+            usb_vid, usb_pid = self._usb_vid_pid() if use_usb else (0, 0)
+        except ValueError as exc:
+            messagebox.showerror("CPS FW upd", str(exc))
+            return
 
         if not messagebox.askyesno(
             "CPS FW upd",
-            f"Send ABORT to {ip}:{port} and ask STM to cancel the active CPS FW session?",
+            (
+                "Send ABORT over the STM USB HS/FS bridge and ask STM to cancel the active CPS FW session?"
+                if use_usb
+                else f"Send ABORT to {ip}:{port} and ask STM to cancel the active CPS FW session?"
+            ),
         ):
             return
 
@@ -2534,15 +3750,24 @@ class App(tk.Tk):
         self._cpsfw_status_var.set("Sending remote abort...")
         self._cpsfw_thread = threading.Thread(
             target=self._cpsfw_abort_worker,
-            args=(shared_client, ip, port, timeout),
+            args=(shared_client, use_usb, ip, port, timeout, usb_vid, usb_pid),
             daemon=True,
         )
         self._cpsfw_thread.start()
 
-    def _cpsfw_abort_worker(self, shared_client: NetClient | None, ip: str, port: int, timeout: float):
+    def _cpsfw_abort_worker(self, shared_client: NetClient | None, use_usb: bool, ip: str, port: int,
+                            timeout: float, usb_vid: int, usb_pid: int):
         owner = "CPS FW abort"
         try:
-            if shared_client is not None:
+            if use_usb:
+                self._cpsfw_log(f"Opening STM USB HS/FS bridge for ABORT VID={usb_vid:04X} PID={usb_pid:04X}...")
+                shared_sock = self._open_usb_flash_bridge(usb_vid, usb_pid)
+                try:
+                    shared_sock.settimeout(timeout)
+                    reply = abort_session_on_socket(shared_sock, timeout, log=self._cpsfw_log)
+                finally:
+                    shared_sock.close()
+            elif shared_client is not None:
                 self._cpsfw_log("Borrowing the connected Ethernet socket for ABORT...")
                 shared_sock = shared_client.acquire_exclusive_socket(owner, timeout=5.0)
                 try:
@@ -2557,6 +3782,425 @@ class App(tk.Tk):
             msg = f"Abort failed: {exc}"
             self._cpsfw_log(f"[ERROR] {type(exc).__name__}: {exc}")
             self.after(0, lambda: self._cpsfw_done(False, msg))
+
+    def _build_stm_dfu_tab(self):
+        self._stm_dfu_devices: list[StmDfuDeviceInfo] = []
+        self._stm_dfu_device_var = tk.StringVar(value="")
+        self._stm_dfu_file_var = tk.StringVar(value="")
+        self._stm_dfu_status_var = tk.StringVar(value="Idle")
+        self._stm_dfu_detail_var = tk.StringVar(value="No device selected")
+        self._stm_dfu_memory_var = tk.StringVar(value="Refresh devices to inspect DFU memory map.")
+        self._stm_dfu_progress_var = tk.DoubleVar(value=0.0)
+        self._stm_dfu_thread: threading.Thread | None = None
+        self._stm_dfu_cancel_event: threading.Event | None = None
+        self._stm_dfu_log_file = ""
+        self._stm_dfu_log_lock = threading.Lock()
+
+        wrap = ttk.Frame(self.tab_stm_dfu)
+        wrap.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
+
+        left = ttk.Frame(wrap, width=370)
+        left.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 8))
+        left.pack_propagate(False)
+
+        right = ttk.Frame(wrap)
+        right.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        info = ttk.LabelFrame(left, text="STM32 DFU")
+        info.pack(fill=tk.X, pady=(0, 6))
+        ttk.Label(
+            info,
+            text=(
+                "Use this page with an STM32 already in USB DFU / system-bootloader mode. "
+                "It writes a combined CM7+CM4 .bin to the inactive bank at "
+                f"0x{INACTIVE_BANK_BASE:08X}, then toggles SWAP_BANK so the new bank boots."
+            ),
+            wraplength=330,
+            justify=tk.LEFT,
+        ).pack(fill=tk.X, padx=8, pady=8)
+
+        dev_lf = ttk.LabelFrame(left, text="DFU Device")
+        dev_lf.pack(fill=tk.X, pady=6)
+        ttk.Combobox(
+            dev_lf,
+            textvariable=self._stm_dfu_device_var,
+            state="readonly",
+        ).pack(fill=tk.X, padx=8, pady=(8, 4))
+        self._stm_dfu_device_combo = dev_lf.winfo_children()[-1]
+        self._stm_dfu_device_combo.bind("<<ComboboxSelected>>", self._stm_dfu_on_device_selected)
+        ttk.Button(dev_lf, text="Refresh Devices", command=self._stm_dfu_refresh_devices).pack(
+            anchor=tk.E, padx=8, pady=(0, 8)
+        )
+
+        ttk.Label(dev_lf, textvariable=self._stm_dfu_detail_var, wraplength=330, justify=tk.LEFT).pack(
+            fill=tk.X, padx=8, pady=(0, 4)
+        )
+        ttk.Label(dev_lf, textvariable=self._stm_dfu_memory_var, wraplength=330, justify=tk.LEFT).pack(
+            fill=tk.X, padx=8, pady=(0, 8)
+        )
+
+        file_lf = ttk.LabelFrame(left, text="Firmware Image")
+        file_lf.pack(fill=tk.X, pady=6)
+        ttk.Entry(file_lf, textvariable=self._stm_dfu_file_var).pack(
+            fill=tk.X, padx=8, pady=(8, 4)
+        )
+        ttk.Button(file_lf, text="Browse...", command=self._stm_dfu_browse).pack(
+            anchor=tk.E, padx=8, pady=(0, 8)
+        )
+        ttk.Label(
+            file_lf,
+            text=(
+                f"Expected layout: CM7 at +0x000000, CM4 at +0x{PINGPONG_CM4_OFFSET:06X}; "
+                f"maximum {PINGPONG_MAX_IMAGE_SIZE // 1024} KB."
+            ),
+            wraplength=330,
+            justify=tk.LEFT,
+        ).pack(fill=tk.X, padx=8, pady=(0, 8))
+
+        act_lf = ttk.LabelFrame(left, text="Actions")
+        act_lf.pack(fill=tk.X, pady=6)
+        self._stm_dfu_btn_enter = ttk.Button(
+            act_lf,
+            text="Request ROM DFU over Runtime API",
+            command=self._stm_dfu_request_rom_dfu,
+        )
+        self._stm_dfu_btn_enter.pack(fill=tk.X, padx=8, pady=(8, 4))
+        self._stm_dfu_btn_start = ttk.Button(act_lf, text="Start Ping-Pong DFU Update", command=self._stm_dfu_start)
+        self._stm_dfu_btn_start.pack(fill=tk.X, padx=8, pady=4)
+        self._stm_dfu_btn_cancel = ttk.Button(
+            act_lf,
+            text="Cancel Active Flash",
+            command=self._stm_dfu_cancel,
+            state=tk.DISABLED,
+        )
+        self._stm_dfu_btn_cancel.pack(fill=tk.X, padx=8, pady=(0, 8))
+
+        status_lf = ttk.LabelFrame(right, text="Status")
+        status_lf.pack(fill=tk.X, pady=(0, 6))
+        ttk.Label(status_lf, textvariable=self._stm_dfu_status_var).pack(
+            anchor=tk.W, padx=8, pady=(8, 4)
+        )
+        ttk.Progressbar(
+            status_lf,
+            variable=self._stm_dfu_progress_var,
+            maximum=1.0,
+            mode="determinate",
+        ).pack(fill=tk.X, padx=8, pady=(0, 8))
+
+        log_lf = ttk.LabelFrame(right, text="STM DFU Log")
+        log_lf.pack(fill=tk.BOTH, expand=True)
+        self._stm_dfu_log_text = tk.Text(
+            log_lf,
+            wrap=tk.WORD,
+            bg=_C_WHITE,
+            fg=_C_TEXT,
+            insertbackground=_C_TEXT,
+            selectbackground=_C_BLUE,
+            selectforeground=_C_WHITE,
+            font=("Consolas", 9),
+        )
+        scroll = ttk.Scrollbar(log_lf, orient=tk.VERTICAL, command=self._stm_dfu_log_text.yview)
+        self._stm_dfu_log_text.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self._stm_dfu_log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.after(150, self._stm_dfu_refresh_devices)
+
+    def _stm_dfu_selected_device(self) -> StmDfuDeviceInfo | None:
+        if not self._stm_dfu_devices:
+            return None
+        try:
+            index = self._stm_dfu_device_combo.current()
+        except Exception:
+            return None
+        if index < 0 or index >= len(self._stm_dfu_devices):
+            return None
+        return self._stm_dfu_devices[index]
+
+    def _stm_dfu_find_flash_alt_for_address(
+        self,
+        selected: StmDfuDeviceInfo,
+        address: int,
+    ) -> tuple[StmDfuDeviceInfo | None, object | None]:
+        for candidate in self._stm_dfu_devices:
+            same_physical_device = (
+                candidate.vid == selected.vid
+                and candidate.pid == selected.pid
+                and candidate.serial_number == selected.serial_number
+                and candidate.bus == selected.bus
+                and candidate.address == selected.address
+                and candidate.configuration_value == selected.configuration_value
+                and candidate.interface_number == selected.interface_number
+            )
+            if not same_physical_device:
+                continue
+            for sector in candidate.sectors:
+                if sector.start <= address < (sector.start + sector.size):
+                    return candidate, sector
+        return None, None
+
+    def _stm_dfu_on_device_selected(self, _event=None):
+        device = self._stm_dfu_selected_device()
+        if device is None:
+            self._stm_dfu_detail_var.set("No DFU device selected.")
+            self._stm_dfu_memory_var.set("Refresh devices to inspect DFU memory map.")
+            return
+        sector_count = len(device.sectors)
+        self._stm_dfu_detail_var.set(
+            f"VID:PID {device.vid:04X}:{device.pid:04X} | intf {device.interface_number} "
+            f"| alt {device.alt_setting} | transfer {device.transfer_size} B"
+        )
+        if sector_count:
+            first = device.sectors[0]
+            self._stm_dfu_memory_var.set(
+                f"{device.memory_name or 'DFU memory'} @ 0x{device.memory_base:08X}, "
+                f"{sector_count} sector(s), first sector {first.size} B"
+            )
+        else:
+            self._stm_dfu_memory_var.set(
+                device.interface_string or "No STM memory map descriptor exposed by this DFU interface."
+            )
+
+    def _stm_dfu_refresh_devices(self):
+        current_key = None
+        current = self._stm_dfu_selected_device()
+        if current is not None:
+            current_key = current.key
+
+        devices = enumerate_dfu_devices()
+        self._stm_dfu_devices = devices
+        values = [f"[{idx + 1}] {item.label()}" for idx, item in enumerate(devices)]
+        self._stm_dfu_device_combo.configure(values=values)
+
+        if not STM_DFU_HAS_USB:
+            self._stm_dfu_device_var.set("")
+            self._stm_dfu_detail_var.set("pyusb is not available in this environment.")
+            self._stm_dfu_memory_var.set("Install `pyusb` and a libusb backend to use STM DFU.")
+            return
+
+        if not devices:
+            self._stm_dfu_device_var.set("")
+            self._stm_dfu_detail_var.set("No USB DFU devices detected.")
+            self._stm_dfu_memory_var.set("Put the STM32 into DFU mode, then click Refresh Devices.")
+            return
+
+        selected_index = 0
+        if current_key is not None:
+            for idx, item in enumerate(devices):
+                if item.key == current_key:
+                    selected_index = idx
+                    break
+        self._stm_dfu_device_combo.current(selected_index)
+        self._stm_dfu_device_var.set(values[selected_index])
+        self._stm_dfu_on_device_selected()
+
+    def _stm_dfu_browse(self):
+        path = filedialog.askopenfilename(
+            title="Select combined STM32 ping-pong image",
+            filetypes=[("Combined binary images", "*.bin"), ("All files", "*.*")],
+        )
+        if path:
+            self._stm_dfu_file_var.set(path)
+
+    @staticmethod
+    def _stm_dfu_host_ts_full() -> str:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+    def _stm_dfu_make_log_path(self) -> str:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        return os.path.join(LOG_DIR, "stm_dfu", f"stm_dfu_{stamp}.log")
+
+    def _stm_dfu_write_file(self, text: str):
+        if not self._stm_dfu_log_file:
+            return
+        try:
+            os.makedirs(os.path.dirname(self._stm_dfu_log_file), exist_ok=True)
+            append_text(self._stm_dfu_log_lock, self._stm_dfu_log_file, text)
+        except Exception:
+            pass
+
+    def _stm_dfu_log(self, msg: str):
+        self._stm_dfu_write_file(f"[{self._stm_dfu_host_ts_full()}] {msg}\n")
+
+        def _append():
+            self._stm_dfu_log_text.insert("end", msg + "\n")
+            self._stm_dfu_log_text.see("end")
+
+        self.after(0, _append)
+
+    def _stm_dfu_set_progress(self, pct: float, status: str):
+        def _update():
+            self._stm_dfu_progress_var.set(max(0.0, min(1.0, pct)))
+            self._stm_dfu_status_var.set(status)
+
+        self.after(0, _update)
+
+    def _stm_dfu_set_busy(self, busy: bool):
+        self._stm_dfu_btn_enter.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        self._stm_dfu_btn_start.configure(state=tk.DISABLED if busy else tk.NORMAL)
+        self._stm_dfu_btn_cancel.configure(state=tk.NORMAL if busy else tk.DISABLED)
+        self._stm_dfu_device_combo.configure(state=tk.DISABLED if busy else "readonly")
+
+    def _stm_dfu_request_rom_dfu(self):
+        if not self.client:
+            messagebox.showerror("STM DFU", "Connect to the running STM firmware first.")
+            return
+
+        frame = bytearray(9)
+        frame[0] = STM_FW_API_PKT_TYPE
+        frame[1] = len(frame) & 0xFF
+        frame[2] = (len(frame) >> 8) & 0xFF
+        frame[3] = 0x01
+        frame[4] = 0x00
+        frame[5] = STM_FW_API_FUNC
+        frame[6] = 0x00
+        frame[7] = 0x00
+        frame[8] = (
+            ((STM_FW_API_CONTROLLER_ENTER_ROM_DFU & 0x0F) << 4)
+            | STM_FW_CTRL_TYPE_CONTROLLER
+        )
+        self._stm_dfu_log("Requesting STM ROM DFU through FW_UPDATE / CONTROLLLER_UNIT / ENTER_ROM_DFU.")
+        self._send_bytes(bytes(frame), "STM ROM DFU request")
+
+    def _stm_dfu_start(self):
+        if self._stm_dfu_thread is not None and self._stm_dfu_thread.is_alive():
+            messagebox.showinfo("STM DFU", "An STM DFU flash is already running.")
+            return
+        if not STM_DFU_HAS_USB:
+            messagebox.showerror("STM DFU", "pyusb is not available in this environment.")
+            return
+
+        device = self._stm_dfu_selected_device()
+        if device is None:
+            messagebox.showerror("STM DFU", "Please refresh and select a USB DFU device.")
+            return
+        flash_device, inactive_sector = self._stm_dfu_find_flash_alt_for_address(
+            device,
+            INACTIVE_BANK_BASE,
+        )
+        if inactive_sector is None:
+            messagebox.showerror(
+                "STM DFU",
+                "No Internal Flash DFU alt setting was found that covers "
+                f"0x{INACTIVE_BANK_BASE:08X}. Refresh DFU devices and verify the "
+                "STM ROM bootloader exposes the internal flash target.",
+            )
+            return
+
+        path = self._stm_dfu_file_var.get().strip()
+        if not path:
+            messagebox.showerror("STM DFU", "Please select a combined .bin image.")
+            return
+        if os.path.splitext(path)[1].lower() != ".bin":
+            messagebox.showerror("STM DFU", "Ping-pong DFU update accepts a combined .bin image only.")
+            return
+
+        try:
+            payload_size = os.path.getsize(path)
+        except Exception as exc:
+            messagebox.showerror("STM DFU", f"Unable to read firmware image:\n{exc}")
+            return
+        if payload_size <= 0:
+            messagebox.showerror("STM DFU", "Firmware image is empty.")
+            return
+        if payload_size > PINGPONG_MAX_IMAGE_SIZE:
+            messagebox.showerror(
+                "STM DFU",
+                f"Firmware image is {payload_size} bytes; maximum is {PINGPONG_MAX_IMAGE_SIZE} bytes.",
+            )
+            return
+
+        summary = (
+            f"Device        : {device.label()}\n"
+            f"Flash alt     : alt{flash_device.alt_setting if flash_device else device.alt_setting}\n"
+            f"Image         : {path}\n"
+            f"Payload       : {payload_size} bytes\n"
+            f"Write address : 0x{INACTIVE_BANK_BASE:08X} inactive bank\n"
+            f"Bank switch   : Toggle SWAP_BANK after write\n\n"
+            f"Proceed with ping-pong DFU update?"
+        )
+        if not messagebox.askyesno("STM DFU", summary):
+            return
+
+        self._stm_dfu_log_text.delete("1.0", "end")
+        self._stm_dfu_progress_var.set(0.0)
+        self._stm_dfu_log_file = self._stm_dfu_make_log_path()
+        self._stm_dfu_cancel_event = threading.Event()
+        self._stm_dfu_set_busy(True)
+        self._stm_dfu_status_var.set("Preparing STM DFU ping-pong update...")
+        self._stm_dfu_log("=" * 72)
+        self._stm_dfu_log("STM DFU ping-pong update requested")
+        self._stm_dfu_log(f"Device   : {device.label()}")
+        if flash_device is not None and flash_device.key != device.key:
+            self._stm_dfu_log(
+                f"Flash alt: alt{flash_device.alt_setting} "
+                f"({flash_device.memory_name or flash_device.interface_string})"
+            )
+        self._stm_dfu_log(f"Image    : {path}")
+        self._stm_dfu_log(f"Payload  : {payload_size} bytes")
+        self._stm_dfu_log(f"Target   : inactive bank @ 0x{INACTIVE_BANK_BASE:08X}")
+        self._stm_dfu_log("Switch   : toggle SWAP_BANK after download")
+        self._stm_dfu_log(f"Trace    : {self._stm_dfu_log_file}")
+        self._stm_dfu_log("=" * 72)
+
+        self._stm_dfu_thread = threading.Thread(
+            target=self._stm_dfu_worker,
+            args=(device, path),
+            daemon=True,
+        )
+        self._stm_dfu_thread.start()
+
+    def _stm_dfu_cancel(self):
+        if self._stm_dfu_cancel_event is not None:
+            self._stm_dfu_cancel_event.set()
+            self._stm_dfu_status_var.set("Cancelling STM DFU flash...")
+
+    def _stm_dfu_worker(self, device: StmDfuDeviceInfo, path: str):
+        try:
+            with open(path, "rb") as fh:
+                combined_bin = fh.read()
+            self._stm_dfu_log(f"Resolved combined image: {len(combined_bin)} bytes")
+            cancel_event = self._stm_dfu_cancel_event or threading.Event()
+            cube_cli = find_cubeprogrammer_cli()
+            if cube_cli:
+                self._stm_dfu_log(f"CubeProgrammer CLI fast path: {cube_cli}")
+                cubeprogrammer_flash_inactive_bank(
+                    device=device,
+                    image_path=path,
+                    log=self._stm_dfu_log,
+                    progress=self._stm_dfu_set_progress,
+                    cancel_event=cancel_event,
+                )
+                self._stm_dfu_log("Reopening DFU to toggle SWAP_BANK option byte.")
+                with StmDfuSession(
+                    device=device,
+                    log=self._stm_dfu_log,
+                    progress=self._stm_dfu_set_progress,
+                    cancel_event=cancel_event,
+                ) as session:
+                    session.toggle_swap_bank_and_reset()
+            else:
+                self._stm_dfu_log("CubeProgrammer CLI not found; using pyusb DFU fallback.")
+                with StmDfuSession(
+                    device=device,
+                    log=self._stm_dfu_log,
+                    progress=self._stm_dfu_set_progress,
+                    cancel_event=cancel_event,
+                ) as session:
+                    session.flash_pingpong(combined_bin)
+            self.after(0, lambda: self._stm_dfu_done(True, "STM DFU ping-pong update completed."))
+        except Exception as exc:
+            self._stm_dfu_log(f"[ERROR] {type(exc).__name__}: {exc}")
+            self.after(0, lambda: self._stm_dfu_done(False, f"STM DFU failed: {exc}"))
+
+    def _stm_dfu_done(self, ok: bool, message: str):
+        self._stm_dfu_thread = None
+        self._stm_dfu_cancel_event = None
+        self._stm_dfu_set_busy(False)
+        self._stm_dfu_status_var.set(message)
+        if ok:
+            self._stm_dfu_progress_var.set(1.0)
+        self._stm_dfu_refresh_devices()
 
     def _build_reg_tab(self):
         # --- Register selector ---

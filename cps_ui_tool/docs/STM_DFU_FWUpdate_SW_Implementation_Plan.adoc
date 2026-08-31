@@ -1,0 +1,363 @@
+= STM32 ROM DFU Ping-Pong FW Update: SW Implementation Plan
+:toc:
+:toclevels: 3
+
+== Purpose
+
+This document describes the software-side required procedure for updating STM32 firmware through the ST ROM DFU bootloader using a ping-pong flash-bank strategy.
+
+The intended model is:
+
+* Runtime application receives a generic firmware-update command.
+* Runtime application acknowledges the command, prepares for ROM DFU, stores a one-shot DFU boot request, and resets.
+* Host software waits for the STM32 ROM DFU USB device.
+* Host software programs the inactive flash bank.
+* Host software toggles `SWAP_BANK`.
+* STM32 resets and boots from the newly programmed bank.
+
+== Runtime ROM DFU Request API
+
+The host should request ROM DFU entry through the existing firmware-update command family, using the controller unit operation.
+
+=== Request API Frame
+
+Current API frame:
+
+[source,text]
+----
+02 09 00 01 00 B1 00 00 21
+----
+
+=== Byte Meaning
+
+[cols="1,1,3",options="header"]
+|===
+|Byte offset |Value |Meaning
+
+|0
+|`0x02`
+|Packet type used by the application protocol.
+
+|1..2
+|`0x09 0x00`
+|Frame length, little-endian. Total frame size is 9 bytes.
+
+|3..4
+|`0x01 0x00`
+|Sequence or command context fields used by the runtime protocol.
+
+|5
+|`0xB1`
+|Firmware-update command/function.
+
+|6..7
+|`0x00 0x00`
+|Reserved/context bytes.
+
+|8
+|`0x21`
+|High nibble `0x2` = enter ROM DFU operation. Low nibble `0x1` = controller unit.
+|===
+
+=== Runtime API Constants
+
+[cols="1,1,3",options="header"]
+|===
+|Name |Value |Purpose
+
+|`FW_UPDATE`
+|`0xB1`
+|Top-level firmware-update command/function.
+
+|`CONTROLLLER_UNIT`
+|`0x01`
+|Controller/STM32 unit selector in the low nibble of byte 8.
+
+|`API_CTRL_FW_OTA_DISABLE`
+|`0x00`
+|Controller firmware-update operation: disable OTA/runtime FW update mode.
+
+|`API_CTRL_FW_OTA_ENABLE`
+|`0x01`
+|Controller firmware-update operation: enable OTA/runtime FW update mode.
+
+|`API_CTRL_FW_ENTER_ROM_DFU`
+|`0x02`
+|Controller firmware-update operation: request entry to ST ROM DFU.
+|===
+
+Byte 8 is split into two nibbles:
+
+[source,text]
+----
+bits[7:4] = controller FW-update operation
+bits[3:0] = target unit
+----
+
+For ROM DFU entry:
+
+[source,text]
+----
+bits[7:4] = 0x2
+bits[3:0] = 0x1
+byte8     = 0x21
+----
+
+=== Expected Runtime Behavior
+
+After receiving the command, firmware shall:
+
+1. Validate that the command is for the ST controller unit and the operation is enter ROM DFU.
+2. Send an ACK/OK (echoback) response to the host before resetting.
+3. Allow a short delay of 200mS so the response can leave the transport. Once echo back is received in SW end wait for 1 to 2 secs for system restart and entering into bootlaoder DFU mode.
+4. After this step as controllers resets and enters into DFU mode, USB will get de-enumerated and re-enumerates with `USB\VID_0483&PID_DF11\200364500000`, device description as `STM32 Bootloader` and will be visible as `DFU in FS Mode in device manager`. These are STs defualt values and cant be changed.
+
+== SW Update Procedure requirements
+
+=== Step 1: Request ROM DFU
+
+The custom SW utility sends the runtime ROM DFU request frame:
+
+[source,text]
+----
+02 09 00 01 00 B1 00 00 21
+----
+
+The sw shall wait for the ACK/OK response, then expect the runtime USB device or runtime communication channel to disappear.
+
+=== Step 2: Detect STM32 ROM DFU
+
+After reset, wait for ST ROM DFU enumeration.
+
+Typical USB VID/PID:
+
+[source,text]
+----
+VID = 0x0483
+PID = 0xDF11
+----
+
+If multiple DFU devices are connected, select by USB serial number where available.
+
+The sw shall confirm that the DFU target exposes internal flash and that the inactive bank address is writable for debugging/logging purposes.
+
+=== Step 3: Program Inactive Bank
+
+Program the combined STM32 firmware binary to:
+
+[source,text]
+----
+0x08100000
+----
+
+This is the inactive bank CPU address used by the ping-pong update scheme.
+
+Recommended behavior:
+
+* Use `ST CubeProgrammer CLI` or `ST CubeProgrammer API/DLL` for the main flash download.
+* Enable verification unless update time must be minimized and another integrity mechanism is present.
+* Log the target address, image path, image size, and result, time taken.
+
+=== Step 4: Toggle SWAP_BANK
+
+After the inactive bank is programmed and verified, read the current STM32 option bytes and toggle `SWAP_BANK`.
+
+For STM32H755, the software flow used by the host should be:
+
+1. Read current option-byte value containing `SWAP_BANK`.
+2. Toggle bit 31.
+3. Program the updated option-byte value.
+4. Trigger option-byte reload / manifestation / reset.
+
+The exact option-byte access method depends on whether the host uses `CubeProgrammer CLI`, `CubeProgrammer API/DLL`, or `raw DFU commands`.
+
+=== Step 5: Confirm Reset / Boot
+
+After option-byte programming, the STM32 should `reset`. The DFU USB device should disconnect.
+
+The utility should then wait for either:
+
+* the normal runtime device/interface to enumerate again with GRL PID/VID, or
+* the normal runtime communication channel to become available.
+
+== CubeProgrammer CLI Approach
+
+This is the recommended first implementation because it matches the behavior and speed of `STM32CubeProgrammer`.
+
+=== Advantages
+
+* Fast and already validated by ST.
+* Minimal custom DFU protocol code.
+* Handles erase/program/verify details internally.
+* Easy to call from most custom software stacks.
+
+=== Example Command
+
+[source,text]
+----
+STM32_Programmer_CLI.exe ^
+  -c port=usb1 VID=0x0483 PID=0xDF11 sn=<serial_number> ^
+  -w <firmware.bin> 0x08100000 ^
+  -v
+----
+
+Notes:
+
+* `port=usb1` selects USB DFU.
+* `VID=0x0483 PID=0xDF11` selects ST ROM DFU.
+* `sn=<serial_number>` is recommended when more than one DFU device may be connected.
+* `-w <file> 0x08100000` writes the firmware image to the inactive bank.
+* `-v` verifies the write.
+* Do not use `-v fast` for ROM DFU bootloader mode; fast verify may not be supported on bootloader interfaces.
+
+=== Option Bytes With CLI
+
+If the CLI option-byte command supports the required `SWAP_BANK` symbol on the target device, use:
+
+[source,text]
+----
+STM32_Programmer_CLI.exe -c port=usb1 sn=<serial_number> -ob displ
+STM32_Programmer_CLI.exe -c port=usb1 sn=<serial_number> -ob <SWAP_BANK_option>=<new_value>
+----
+
+If the CLI does not expose a convenient symbolic `SWAP_BANK` command for the target, the software may:
+
+* use CubeProgrammer CLI for the fast flash write, and
+* use CubeProgrammer API/DLL or raw DFU for the small option-byte toggle.
+
+=== Packaging CLI With Custom Installer
+
+If target PCs may not have STM32CubeProgrammer installed, the custom installer can package the required ST CubeProgrammer CLI runtime files, subject to ST license requirements.
+
+Recommended bundled layout:
+
+[source,text]
+----
+<app install dir>/
+  tools/
+    STM32CubeProgrammer/
+      bin/
+        STM32_Programmer_CLI.exe
+        required DLLs
+      api/
+        Data_Base/
+        lib/
+          FlashLoader/
+      doc/
+        license.txt
+----
+
+The application should search in this order:
+
+1. User override path, for example an environment variable or application setting.
+2. Bundled installer path.
+3. System `PATH`.
+4. Default STM32CubeProgrammer install paths.
+
+The installer should include ST license/disclaimer material from the STM32CubeProgrammer package.
+
+== CubeProgrammer API/DLL Approach
+
+This is the cleaner long-term integration if the custom SW should avoid spawning a CLI process.
+
+ST provides `CubeProgrammer_API.dll` and headers in the STM32CubeProgrammer API package.
+
+Relevant API concepts include:
+
+[source,c]
+----
+getDfuDeviceList(...)
+connectDfuBootloader(...)
+connectDfuBootloader2(...)
+downloadFile(...)
+sendOptionBytesCmd(...)
+disconnect()
+----
+
+=== Advantages
+
+* No external process launch.
+* Better integration with custom UI progress, logging, and cancellation.
+* Direct control of connection, download, verify, option bytes, and disconnect.
+
+=== Tradeoffs
+
+* Requires packaging `CubeProgrammer_API.dll` and its dependent DLLs.
+* Requires database and flash-loader resources used by the API.
+* Python/.NET/C# applications may need a wrapper layer because the ST API is C/C++ style.
+* API version updates must be managed with the application release.
+
+=== Recommended Wrapper Design
+
+For a non-C++ application, create a small native wrapper DLL around ST's API and expose only the required operations.
+
+Example wrapper surface:
+
+[source,c]
+----
+int app_stm_dfu_list_devices(...);
+int app_stm_dfu_write_inactive_bank(const wchar_t *bin_path,
+                                    uint32_t address,
+                                    const char *serial);
+int app_stm_dfu_toggle_swap_bank(const char *serial);
+int app_stm_dfu_disconnect(void);
+----
+
+The custom SW then calls the wrapper rather than binding the entire ST API directly.
+
+== Raw DFU Approach
+
+Raw DFU should be used only as a fallback or for small operations.
+
+It is possible to perform erase, address pointer setup, download, upload, and option-byte programming through USB DFU control transfers. However, this is usually slower and more fragile than CubeProgrammer because the host must correctly implement:
+
+* DFU state-machine recovery.
+* erase command sequence.
+* address pointer command sequence.
+* transfer-size limitations.
+* GETSTATUS polling.
+* option-byte access.
+* manifestation/reset behavior.
+
+For large firmware images, prefer CubeProgrammer CLI/API.
+
+== Error Handling Requirements
+
+The custom SW should handle these cases:
+
+* Runtime ACK is not received.
+* Runtime device resets but ROM DFU does not enumerate.
+* Multiple DFU devices are connected.
+* CubeProgrammer CLI/API is missing.
+* Flash write fails.
+* Verify fails.
+* Option-byte programming fails.
+* USB disconnects during manifestation/reset.
+
+USB disconnect during the final reset can be expected and should not automatically be treated as failure if the flash write and option-byte programming already completed successfully.
+
+== Recommended Final Flow
+
+[source,text]
+----
+1. User selects combined STM32 firmware binary.
+2. Utility sends runtime ROM DFU request:
+   02 09 00 01 00 B1 00 00 21
+3. Utility waits for ACK.
+4. Utility waits for ST ROM DFU enumeration: VID 0483, PID DF11.
+5. Utility writes binary to inactive bank 0x08100000 using CubeProgrammer CLI or API.
+6. Utility verifies the programmed image.
+7. Utility toggles SWAP_BANK option byte.
+8. Utility triggers option-byte reload/reset.
+9. Utility waits for normal application enumeration.
+10. Utility reports update success.
+----
+
+== Notes for Distribution
+
+If CubeProgrammer CLI/API files are bundled with the custom SW installer:
+
+* Include ST license text and third-party notices from the CubeProgrammer package.
+* Keep ST DLLs, database files, and flash loaders together in the expected relative layout.
+* Ensure the custom SW is used only with ST microcontroller targets, per ST license conditions.
+* Provide a version record of the bundled STM32CubeProgrammer package.

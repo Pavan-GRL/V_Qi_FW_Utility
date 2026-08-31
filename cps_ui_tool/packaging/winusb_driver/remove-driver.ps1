@@ -17,22 +17,22 @@ if (-not (Test-IsAdministrator)) {
 $pnputil = Join-Path $env:windir "System32\pnputil.exe"
 $presentDrivers = Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue |
     Where-Object {
-        $_.DeviceID -like "USB\\VID_227F&PID_0006*" -and
-        $_.DriverProviderName -eq "GRL"
+        $_.DeviceID -like "USB\\VID_3985&PID_0007*" -and
+        $_.DriverProviderName -eq "GRL Platform Solutions"
     } |
     Select-Object -ExpandProperty InfName -Unique
 
 $stagedDrivers = Get-WindowsDriver -Online -ErrorAction SilentlyContinue |
     Where-Object {
         $_.OriginalFileName -ieq "GRL_V_QI_WinUSB.inf" -or
-        $_.ProviderName -eq "GRL"
+        $_.ProviderName -eq "GRL Platform Solutions"
     } |
     Select-Object -ExpandProperty Driver -Unique
 
 $drivers = @($presentDrivers + $stagedDrivers) | Where-Object { $_ } | Sort-Object -Unique
 
 if (-not $drivers) {
-    Write-Host "No installed GRL WinUSB driver instances were found for VID_227F/PID_0006."
+    Write-Host "No installed GRL WinUSB driver instances were found for VID_3985/PID_0007."
     exit 0
 }
 

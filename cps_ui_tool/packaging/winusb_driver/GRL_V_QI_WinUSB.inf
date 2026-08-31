@@ -1,5 +1,5 @@
-; GRL V_QI Utility WinUSB driver package for VID_227F / PID_0006
-; If Device Manager shows a composite interface ID such as USB\VID_227F&PID_0006&MI_00,
+; GRL V_QI Utility WinUSB driver package for VID_3985 / PID_0007
+; If Device Manager shows a composite interface ID such as USB\VID_3985&PID_0007&MI_00,
 ; replace the hardware ID below with the exact MI_XX value before generating the catalog.
 
 [Version]
@@ -15,10 +15,10 @@ PnpLockdown = 1
 %ProviderName% = GRL,NTamd64,NTarm64
 
 [GRL.NTamd64]
-%DeviceName% = USB_Install, USB\VID_227F&PID_0006
+%DeviceName% = USB_Install, USB\VID_3985&PID_0007
 
 [GRL.NTarm64]
-%DeviceName% = USB_Install, USB\VID_227F&PID_0006
+%DeviceName% = USB_Install, USB\VID_3985&PID_0007
 
 [USB_Install]
 Include = winusb.inf
@@ -35,5 +35,5 @@ AddReg = USB_Install_AddReg
 HKR,,DeviceInterfaceGUIDs,0x10000,"{1D4B2365-2A21-47D1-9A3B-8A2EBA1B2D23}"
 
 [Strings]
-ProviderName = "GRL"
-DeviceName   = "GRL V_QI USB Device"
+ProviderName = "GRL Platform Solutions"
+DeviceName   = "V-QI"

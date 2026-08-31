@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import socket
 import threading
+import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
 from protocol import hex_dump_spaces
 
 
-DEFAULT_CHUNK_SIZE = 512
-SUPPORTED_CHUNK_SIZES = (256, 512)
+DEFAULT_CHUNK_SIZE = 511
+SUPPORTED_CHUNK_SIZES = (256, 511)
 DEFAULT_MAX_RETRIES = 3
 
 _FRAME_START_BYTES = (0x01, 0x02, 0x07)
@@ -123,7 +124,11 @@ def read_len_prefixed_frame(sock: socket.socket) -> bytes:
     if total_len < 3:
         raise ValueError(f"Invalid frame length {total_len}")
 
-    return header + _recv_exact(sock, total_len - 3)
+    frame = header + _recv_exact(sock, total_len - 3)
+    discard_padding = getattr(sock, "discard_zero_padding", None)
+    if callable(discard_padding):
+        discard_padding()
+    return frame
 
 
 def _build_frame(seq: int, op: int, payload: bytes = b"") -> bytes:
@@ -323,13 +328,20 @@ class CpsFwUpdater:
         on_reply: Optional[Callable[[CpsUpdateReply], None]] = None,
         step_gate: Optional[threading.Event] = None,
         on_step_pause: Optional[Callable[[CpsStepContext], None]] = None,
-        sock: Optional[socket.socket] = None,
+        sock: Optional[object] = None,
+        sock_factory: Optional[Callable[[], object]] = None,
+        transport_name: str = "",
         max_retries: int = DEFAULT_MAX_RETRIES,
+        inter_command_delay_s: float = 0.0,
+        on_transport_prepare_before_begin: Optional[Callable[[object], object]] = None,
+        on_transport_restore_after_done: Optional[Callable[[object], None]] = None,
     ):
         if chunk_size not in SUPPORTED_CHUNK_SIZES:
             raise ValueError(f"Unsupported chunk size {chunk_size}")
         if max_retries <= 0:
             raise ValueError("max_retries must be positive")
+        if inter_command_delay_s < 0:
+            raise ValueError("inter_command_delay_s must be zero or positive")
 
         self.ip = ip
         self.port = port
@@ -346,8 +358,15 @@ class CpsFwUpdater:
         self._on_step_pause = on_step_pause
         self.max_retries = max_retries
         self.auto_mode = False
+        self.transport_name = transport_name or f"TCP {ip}:{port}"
+        self.inter_command_delay_s = float(inter_command_delay_s)
+        self._on_transport_prepare_before_begin = on_transport_prepare_before_begin
+        self._on_transport_restore_after_done = on_transport_restore_after_done
+        self._transport_prepared_before_begin = False
+        self._transport_restored_after_done = False
 
-        self._sock: Optional[socket.socket] = sock
+        self._sock: Optional[object] = sock
+        self._sock_factory = sock_factory
         self._owns_socket = sock is None
         self._seq = 1
 
@@ -366,14 +385,18 @@ class CpsFwUpdater:
             self.on_log(f"[ERROR] {type(exc).__name__}: {exc}")
             self.on_done(False, f"{type(exc).__name__}: {exc}")
         finally:
+            self._restore_transport_after_done()
             self._disconnect()
 
     def _connect(self) -> None:
         if self._sock is not None and not self._owns_socket:
-            self.on_log(f"Using shared TCP socket for {self.ip}:{self.port}.")
+            self.on_log(f"Using {self.transport_name}.")
             return
-        self.on_log(f"Connecting to {self.ip}:{self.port} ...")
-        self._sock = socket.create_connection((self.ip, self.port), timeout=10.0)
+        self.on_log(f"Connecting to {self.transport_name} ...")
+        if self._sock_factory is not None:
+            self._sock = self._sock_factory()
+        else:
+            self._sock = socket.create_connection((self.ip, self.port), timeout=10.0)
         self.on_log("Connected.")
 
     def _disconnect(self) -> None:
@@ -389,10 +412,8 @@ class CpsFwUpdater:
             pass
 
     def _next_seq(self) -> int:
-        value = self._seq & 0xFFFF
-        self._seq = (self._seq + 1) & 0xFFFF
-        if self._seq == 0:
-            self._seq = 1
+        value = self._seq & 0xFF
+        self._seq = (value + 1) & 0xFF
         return value
 
     def _check_cancel(self) -> None:
@@ -412,6 +433,16 @@ class CpsFwUpdater:
             self._check_cancel()
             self._step_gate.wait(timeout=0.2)
 
+    def _wait_inter_command_delay(self, label: str) -> None:
+        if self.inter_command_delay_s <= 0:
+            return
+
+        self.on_log(
+            f"[PACE] Waiting {self.inter_command_delay_s * 1000:.0f} ms before {label}"
+        )
+        if self.cancel.wait(timeout=self.inter_command_delay_s):
+            raise RuntimeError("Cancelled by user")
+
     def _exchange(self, frame: bytes, label: str, detail: str = "") -> CpsUpdateReply:
         self._check_cancel()
         self._wait_gate(label, detail)
@@ -428,6 +459,7 @@ class CpsFwUpdater:
             try:
                 if attempt > 1:
                     self.on_log(f"[RETRY] {label} attempt {attempt}/{self.max_retries}")
+                self._wait_inter_command_delay(label)
                 reply = _exchange_once(self._sock, frame, self.cmd_timeout, self.on_log, label)
             except (socket.timeout, ValueError) as exc:
                 last_exc = exc
@@ -447,6 +479,9 @@ class CpsFwUpdater:
                 if not self._owns_socket or attempt >= self.max_retries:
                     break
                 self._disconnect()
+                if self._sock_factory is not None:
+                    self.on_log("[RECOVER] Reopening USB transport before retry")
+                    time.sleep(0.5)
                 self._connect()
                 continue
 
@@ -462,6 +497,32 @@ class CpsFwUpdater:
             f"{label} transport failed after {self.max_retries} attempts: "
             f"{type(last_exc).__name__}: {last_exc}"
         )
+
+    def _prepare_transport_before_begin(self) -> None:
+        if self._transport_prepared_before_begin:
+            return
+        if self._on_transport_prepare_before_begin is None:
+            return
+        if self._sock is None:
+            raise RuntimeError("Cannot prepare transport before BEGIN: socket is not open")
+        self._sock = self._on_transport_prepare_before_begin(self._sock)
+        self._transport_prepared_before_begin = True
+
+    def _restore_transport_after_done(self) -> None:
+        if self._transport_restored_after_done:
+            return
+        if not self._transport_prepared_before_begin:
+            return
+        if self._on_transport_restore_after_done is None:
+            return
+        if self._sock is None:
+            return
+        try:
+            self._on_transport_restore_after_done(self._sock)
+        except Exception as exc:
+            self.on_log(f"[WARN] USB runtime restore-to-HS request failed: {type(exc).__name__}: {exc}")
+        finally:
+            self._transport_restored_after_done = True
 
     def _abort_best_effort(self) -> None:
         if self._sock is None:
@@ -486,7 +547,11 @@ class CpsFwUpdater:
         self.on_log(f"Boot HEX : {boot_total} bytes")
         self.on_log(f"App HEX  : {app_total} bytes")
         self.on_log(f"Chunk    : {self.chunk_size} bytes")
+        if self.inter_command_delay_s > 0:
+            self.on_log(f"Pacing   : {self.inter_command_delay_s * 1000:.0f} ms before each command")
         self.on_log("=" * 72)
+
+        self._prepare_transport_before_begin()
 
         self.on_progress(0.02, "Begin bootloader session")
         self._exchange(
@@ -572,4 +637,5 @@ class CpsFwUpdater:
             "EXECUTE",
             "Command: EXECUTE\nAction : verify, reset, chip-id check",
         )
+        self._restore_transport_after_done()
         self.on_progress(1.0, "Done")

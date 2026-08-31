@@ -45,7 +45,7 @@ if (-not (Test-Path -LiteralPath $catPath)) {
     throw "Catalog file not found: $catPath. Generate and sign the catalog before installation."
 }
 
-$hardwareIds = @(Get-UsbHardwareIds -Pattern "USB\\VID_227F&PID_0006*") | Sort-Object -Unique
+$hardwareIds = @(Get-UsbHardwareIds -Pattern "USB\\VID_3985&PID_0007*") | Sort-Object -Unique
 if ($hardwareIds.Count -gt 0) {
     Write-Host "Detected hardware IDs for connected V_QI hardware:" -ForegroundColor Cyan
     $hardwareIds | ForEach-Object { Write-Host "  $_" }
@@ -55,7 +55,7 @@ if ($hardwareIds.Count -gt 0) {
     }
 }
 else {
-    Write-Warning "No connected USB device matching VID_227F/PID_0006 was detected. The driver will still be staged in the driver store."
+    Write-Warning "No connected USB device matching VID_3985/PID_0007 was detected. The driver will still be staged in the driver store."
 }
 
 $pnputil = Join-Path $env:windir "System32\pnputil.exe"

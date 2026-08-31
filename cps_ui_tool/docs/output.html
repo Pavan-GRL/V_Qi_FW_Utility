@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ESP_Display_FW_Update_SW_Requirements</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<h1 id="esp-display-fw-update-integration-document">ESP Display FW
+Update Integration Document</h1>
+<h2 id="scope">Scope</h2>
+<p>Applies to ESP display FW update over:</p>
+<ul>
+<li>Ethernet</li>
+<li>USB HS</li>
+</ul>
+<p>The same SW flashing flow shall work across all three transports.</p>
+<h2 id="background">Background</h2>
+<p>Earlier working firmware used a raw bridge model where TCP/USB
+traffic was forwarded to the ESP ROM bootloader more directly.</p>
+<p>The current STM firmware expects the PC utility to use an STM API
+session for display FW update:</p>
+<ol type="1">
+<li><code>API_ESP_FW_START</code> to arm the session</li>
+<li><code>API_ESP_FW_WRITE</code> for each ESP SLIP frame</li>
+<li><code>API_ESP_FW_SET_BAUD</code> after a successful ESP
+<code>CHANGE_BAUD</code> ACK, when high-baud mode is enabled other than
+<code>115200</code>, by default <code>115200</code> shall be used, later
+we can optimize to <code>921500</code>.</li>
+<li><code>API_ESP_FW_END</code> on completion or abort</li>
+</ol>
+<p>Because of this, the PC utility must no longer assume a raw
+transparent ESP bridge on Ethernet/USB.</p>
+<h2 id="stm-api-frame-format">STM API Frame Format</h2>
+<p>The STM API frame shall use this base header:</p>
+<ul>
+<li>Byte <code>0</code>: packet type</li>
+<li>Bytes <code>1:2</code>: total API frame length, little-endian</li>
+<li>Byte <code>3</code>: sequence number, increment every API frame,
+wrap after <code>255</code></li>
+<li>Byte <code>4</code>: reserved</li>
+<li>Byte <code>5</code>: API function/purpose, <code>0xB1</code> for FW
+update</li>
+<li>Byte <code>6</code>: reserved</li>
+<li>Byte <code>7</code>: parameter type</li>
+<li>Byte <code>8</code>:
+<ul>
+<li>bits <code>[3:0]</code>: controller type</li>
+<li>bits <code>[7:4]</code>: control/sub-operation</li>
+</ul></li>
+<li>Byte <code>9</code> : <code>SLIP</code> Protocol follows as per
+previous method of fw update.</li>
+</ul>
+<p>For display FW update: - controller type: <code>0x04</code> - API
+function: <code>0xB1</code></p>
+<p>Current expected sub-operations:</p>
+<ul>
+<li><code>0x00</code>: <code>API_ESP_FW_END</code></li>
+<li><code>0x01</code>: <code>API_ESP_FW_START</code></li>
+<li><code>0x02</code>: <code>API_ESP_FW_WRITE</code></li>
+<li><code>0x03</code>: <code>API_ESP_FW_SET_BAUD</code></li>
+<li><code>0x04</code> or another FW-agreed value: optional USB-safe
+encoded <code>API_ESP_FW_WRITE</code> variant, if required by USB
+validation</li>
+</ul>
+<h2 id="functional-requirements">Functional Requirements</h2>
+<h3 id="session-start-and-end">1. Session Start and End</h3>
+<p>The utility shall explicitly manage session arming and teardown.</p>
+<p>Requirements:</p>
+<ul>
+<li>Before <code>SYNC</code>, send <code>API_ESP_FW_START</code> on the
+same transport handle that will carry the rest of flashing traffic.</li>
+<li>After sending <code>API_ESP_FW_START</code>, allow a short settle
+delay before issuing <code>SYNC</code>.</li>
+<li>On successful completion, cancellation, or failure, send
+<code>API_ESP_FW_END</code> in a <code>finally</code>/cleanup path
+whenever the session was started successfully.</li>
+</ul>
+<h3 id="esp-slip-frame-wrapping">2. ESP SLIP Frame Wrapping</h3>
+<p>Each ESP ROM command shall be wrapped inside
+<code>API_ESP_FW_WRITE</code>.</p>
+<p>Requirements:</p>
+<ul>
+<li><code>api_buf[9:10]</code> shall contain the ESP SLIP frame length
+in little-endian format.</li>
+<li>For Ethernet and raw-write USB validation,
+<code>api_buf[11..]</code> shall contain the raw SLIP bytes exactly as
+produced by the ESP flasher logic.</li>
+<li>The utility shall preserve the existing ESP SLIP framing and
+checksum behavior.</li>
+<li>The FW API transport layer shall unwrap API replies and return only
+raw ESP response bytes back to the flasher core.</li>
+<li>The ESP ROM bootloader shall always receive the exact original SLIP
+bytes, regardless of whether the PC-to-STM transport carries those bytes
+raw or encoded.</li>
+</ul>
+<h3 id="sequence-number-handling">3. Sequence Number Handling</h3>
+<p>The utility shall maintain STM API sequence numbers per session.</p>
+<p>Requirements:</p>
+<ul>
+<li>Start from a valid <code>uint8</code> value.</li>
+<li>Increment for every STM API frame sent.</li>
+<li>Wrap naturally after <code>255</code>.</li>
+<li>Not mandatory but good to have.</li>
+</ul>
+<h3 id="baud-handling">4. Baud Handling</h3>
+<p>The utility shall support both:</p>
+<ul>
+<li>a safe validation mode at <code>115200</code></li>
+<li>an optional high-baud mode using ESP <code>CHANGE_BAUD</code></li>
+</ul>
+<p>Requirements:</p>
+<ul>
+<li>In initial phases of development, runtime flash baud shall be
+<code>115200</code>, therfore <code>CHANGE_BAUD</code> step shall be
+skipped.</li>
+<li>Later, FW SW shall optimize this step and runtime flash baud shall
+be updated to is greater than <code>115200</code>, the utility shall:
+<ul>
+<li>send ESP <code>CHANGE_BAUD</code></li>
+<li>wait for a successful ESP ACK</li>
+<li>then send <code>API_ESP_FW_SET_BAUD</code> with the new baud in
+<code>api_buf[9:12]</code> little-endian</li>
+</ul></li>
+<li>The utility shall support a temporary SW override that forces
+runtime flash baud back to <code>115200</code> for bring-up/debug when
+high-baud mode is unstable.</li>
+</ul>
+<p>Note: Current validation has shown that the <code>115200</code> path
+is reliable, while high-baud behavior still needs coordinated SW/FW
+validation.</p>
+<h3 id="stm-api-size-constraint">5. STM API Size Constraint</h3>
+<p>The utility shall respect the current STM API frame size limit.</p>
+<p>Known current constraint:</p>
+<ul>
+<li>STM API max frame length: <code>512</code> bytes</li>
+<li>STM <code>WRITE</code> overhead before raw ESP bytes:
+<code>11</code> bytes</li>
+<li>maximum raw SLIP bytes carried inside one STM API frame:
+<code>501</code> bytes</li>
+</ul>
+<p>Requirements:</p>
+<ul>
+<li>The utility shall reject oversized wrapped ESP frames before
+transmission.</li>
+<li>Block sizing shall be chosen so the practical SLIP frame stays below
+the STM API limit.</li>
+</ul>
+<h3 id="flash_data-block-size">6. FLASH_DATA Block Size</h3>
+<p>Block size is the main utility-side speed knob, but it must stay
+compatible with the STM API limit.</p>
+<p>Requirements:</p>
+<ul>
+<li>The utility shall support a conservative block size that is proven
+safe with the current STM API framing.</li>
+<li><code>256</code> bytes is the safe baseline and must remain
+available as the fallback value.</li>
+<li>A cautiously larger block size may be used for performance, but the
+utility must keep enough margin for SLIP escaping overhead.</li>
+<li>If a larger block size causes oversize STM API frames or write
+instability, the utility shall fall back to <code>256</code>.</li>
+</ul>
+<p>Recommended implementation direction:</p>
+<ul>
+<li>keep <code>256</code> as the compatibility baseline</li>
+<li>allow a higher default only if field validation is stable</li>
+<li>consider future dynamic sizing based on the actual SLIP-encoded
+frame length</li>
+</ul>
+<h3 id="logging-and-ui-behavior">7. Logging and UI Behavior</h3>
+<p>For debug purposes, FW update shall stay debuggable without excessive
+slowdown. So SW shall have the below feasibility in initial builds
+atleast.</p>
+<p>Requirements:</p>
+<ul>
+<li>Step-by-step verification shall be available, but default to
+<code>OFF</code>.</li>
+<li>When step mode is <code>OFF</code>, the flasher shall behave in
+automated mode from the start.</li>
+<li>Per-block success logging shall be throttled in automated mode.</li>
+<li>Progress/status updates shall be throttled in automated mode to
+reduce UI overhead.</li>
+<li>Failure, timeout, and retry-related logs shall always remain
+visible.</li>
+</ul>
+<h3 id="retry-and-error-handling">8 Retry and Error Handling</h3>
+<p>The utility shall preserve the existing retry model for critical
+operations.</p>
+<p>Requirements:</p>
+<ul>
+<li><code>SYNC</code>, <code>SPI_ATTACH</code>,
+<code>SPI_SET_PARAMS</code>, <code>FLASH_BEGIN</code>, and
+<code>FLASH_DATA</code> failures shall continue to support retry/abort
+behavior.</li>
+<li>STM timeout/reject sentinel responses shall be translated into
+meaningful utility-side errors.</li>
+<li>Cleanup shall still send <code>API_ESP_FW_END</code> when
+possible.</li>
+<li>USB transport write failures shall support retry without tearing
+down the whole application connection.</li>
+</ul>
+<h3 id="diagnostic-and-replay-support">9. Diagnostic and Replay
+Support</h3>
+<p>The utility shall provide diagnostics that make USB/FW boundary
+failures reproducible.</p>
+<p>Requirements:</p>
+<ul>
+<li>A user-selectable checkbox shall enable dumping replayable STM API
+hex frames after selecting a display firmware <code>.bin</code>.</li>
+<li>The dump shall include STM API header bytes and payload bytes for
+<code>START</code>, each ESP ROM command, each <code>FLASH_DATA</code>
+block, <code>FLASH_END</code>, and <code>END</code>.</li>
+<li>The dump shall identify <code>FLASH_DATA</code> block number, flash
+offset, data size, checksum, API frame length, and raw hex.</li>
+<li>USB echo benchmark support shall remain available for isolating
+endpoint transfer reliability from ESP UART behavior.</li>
+</ul>
+<h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+<h3 id="performance">Performance</h3>
+<ul>
+<li>The utility shall minimize avoidable logging and UI churn during
+<code>FLASH_DATA</code>.</li>
+<li>The utility shall avoid unnecessary connect/disconnect cycles when a
+shared session already exists.</li>
+<li>The utility shall keep the stable <code>115200</code> mode available
+even if high-baud mode remains under investigation.</li>
+</ul>
+<h2 id="open-items">Open Items</h2>
+<ul>
+<li>Re-validate high-baud flashing after STM FW and utility timing are
+finalized.</li>
+<li>Decide whether the production default block size should remain
+conservative at <code>256</code> or move higher after field
+validation.</li>
+<li>Consider dynamic block-size selection based on real SLIP-encoded
+frame length instead of one fixed global size.</li>
+<li>Finalize the encoded write sub-operation value and encoded payload
+format with STM FW.</li>
+</ul>
+</body>
+</html>

@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.ticker import MultipleLocator
 
 from project_paths import LOGS_DIR, ensure_dir
 
@@ -19,6 +20,10 @@ class PlotPanel(ttk.Frame):
         self.max_points = max_points
         self.window_ms = window_ms
         self.enabled_var = tk.BooleanVar(value=True)
+        self.live_vrect_var = tk.StringVar(value="-- mV")
+        self.live_irect_var = tk.StringVar(value="-- mA")
+        self.raw_vrect_count_var = tk.StringVar(value="-- counts")
+        self.raw_irect_count_var = tk.StringVar(value="-- counts")
         self._plot_follow = True    # auto-follow latest; False when user pans/zooms
         self._setting_xlim = False  # guard: True while we programmatically set xlim
 
@@ -29,15 +34,61 @@ class PlotPanel(ttk.Frame):
         ttk.Button(top, text="Live", command=self._go_live).pack(side=tk.LEFT, padx=(10, 0))
         ttk.Button(top, text="Pop Out", command=self._open_popout).pack(side=tk.LEFT, padx=(6, 0))
 
+        # Latest rectified values, kept visible alongside the waveform.
+        live_values = ttk.LabelFrame(self, text="Live Rectified Values")
+        live_values.pack(side=tk.TOP, fill=tk.X, padx=10, pady=(0, 4))
+        ttk.Label(live_values, text="VRECT:").pack(side=tk.LEFT, padx=(10, 4), pady=5)
+        ttk.Label(
+            live_values,
+            textvariable=self.live_vrect_var,
+            width=14,
+            anchor="e",
+            font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, padx=(0, 24), pady=5)
+        ttk.Label(live_values, text="IRECT:").pack(side=tk.LEFT, padx=(0, 4), pady=5)
+        ttk.Label(
+            live_values,
+            textvariable=self.live_irect_var,
+            width=14,
+            anchor="e",
+            font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, pady=5)
+
+        # Calibration-only ADC counts. Hidden until enabled by the Plot-tab
+        # checkbox so it does not consume space during normal streaming.
+        self.raw_counts_frame = ttk.LabelFrame(
+            self, text="Live Raw Rectified ADC Counts (Calibration mode)"
+        )
+        ttk.Label(self.raw_counts_frame, text="VRECT RAW:").pack(
+            side=tk.LEFT, padx=(10, 4), pady=5
+        )
+        ttk.Label(
+            self.raw_counts_frame,
+            textvariable=self.raw_vrect_count_var,
+            width=14,
+            anchor="e",
+            font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, padx=(0, 24), pady=5)
+        ttk.Label(self.raw_counts_frame, text="IRECT RAW:").pack(
+            side=tk.LEFT, padx=(0, 4), pady=5
+        )
+        ttk.Label(
+            self.raw_counts_frame,
+            textvariable=self.raw_irect_count_var,
+            width=14,
+            anchor="e",
+            font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, pady=5)
+
         # ---- main figure ----
         self.fig = Figure(figsize=(8.5, 4.5))
         self.ax = self.fig.add_subplot(111)
         self.ax2 = self.ax.twinx()          # right Y-axis for current
         _style_axes(self.ax, self.ax2)
 
-        self.line_v, = self.ax.plot([], [], color="#003087", linestyle="-",
+        self.line_v, = self.ax.plot([], [], color="#D32F2F", linestyle="-",
                                     linewidth=1.2, label="Voltage (mV)")
-        self.line_i, = self.ax2.plot([], [], color="#1A50A5", linestyle="-",
+        self.line_i, = self.ax2.plot([], [], color="#1565C0", linestyle="-",
                                      linewidth=1.2, label="Current (mA)")
         lines = [self.line_v, self.line_i]
         legend = self.ax.legend(lines, [l.get_label() for l in lines], loc="upper left",
@@ -134,9 +185,9 @@ class PlotPanel(ttk.Frame):
         ax2 = ax.twinx()
         _style_axes(ax, ax2)
 
-        line_v, = ax.plot([], [], color="tab:blue", linestyle="-",
+        line_v, = ax.plot([], [], color="#D32F2F", linestyle="-",
                           linewidth=1.2, label="Voltage (mV)")
-        line_i, = ax2.plot([], [], color="tab:orange", linestyle="-",
+        line_i, = ax2.plot([], [], color="#1565C0", linestyle="-",
                            linewidth=1.2, label="Current (mA)")
         lines = [line_v, line_i]
         ax.legend(lines, [l.get_label() for l in lines], loc="upper left")
@@ -149,6 +200,19 @@ class PlotPanel(ttk.Frame):
         btn_bar = ttk.Frame(win)
         btn_bar.pack(side=tk.TOP, fill=tk.X, padx=6, pady=4)
         ttk.Button(btn_bar, text="Live", command=lambda: _po_go_live(po)).pack(side=tk.LEFT)
+
+        live_values = ttk.LabelFrame(win, text="Live Rectified Values")
+        live_values.pack(side=tk.TOP, fill=tk.X, padx=6, pady=(0, 4))
+        ttk.Label(live_values, text="VRECT:").pack(side=tk.LEFT, padx=(10, 4), pady=5)
+        ttk.Label(
+            live_values, textvariable=self.live_vrect_var, width=14,
+            anchor="e", font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, padx=(0, 24), pady=5)
+        ttk.Label(live_values, text="IRECT:").pack(side=tk.LEFT, padx=(0, 4), pady=5)
+        ttk.Label(
+            live_values, textvariable=self.live_irect_var, width=14,
+            anchor="e", font=("TkDefaultFont", 11, "bold"),
+        ).pack(side=tk.LEFT, pady=5)
 
         canvas = FigureCanvasTkAgg(fig, master=win)
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -226,6 +290,9 @@ class PlotPanel(ttk.Frame):
         self.t_ms.clear()
         self.v_mv.clear()
         self.i_ma.clear()
+        self.live_vrect_var.set("-- mV")
+        self.live_irect_var.set("-- mA")
+        self.clear_raw_counts()
         self._clear_marker()
         self._last_redraw_ms = 0
         self._ts_offset = 0.0
@@ -233,7 +300,30 @@ class PlotPanel(ttk.Frame):
         self._last_adj_ts = None
         self._redraw(force=True)
 
+    def show_raw_counts(self, visible: bool):
+        """Show or hide the calibration ADC-count live-value panel."""
+        if visible:
+            if not self.raw_counts_frame.winfo_manager():
+                self.raw_counts_frame.pack(
+                    side=tk.TOP, fill=tk.X, padx=10, pady=(0, 4),
+                    before=self.canvas.get_tk_widget(),
+                )
+        else:
+            self.raw_counts_frame.pack_forget()
+            self.clear_raw_counts()
+
+    def update_raw_counts(self, vrect_count: int, irect_count: int):
+        self.raw_vrect_count_var.set(f"{int(vrect_count):,} counts")
+        self.raw_irect_count_var.set(f"{int(irect_count):,} counts")
+
+    def clear_raw_counts(self):
+        self.raw_vrect_count_var.set("-- counts")
+        self.raw_irect_count_var.set("-- counts")
+
     def push_point(self, raw_ts_ms: int, rect_v_mv: int, rect_i_ma: int) -> float | None:
+        self.live_vrect_var.set(f"{int(rect_v_mv):,} mV")
+        self.live_irect_var.set(f"{int(rect_i_ma):,} mA")
+
         if not self.enabled_var.get():
             return None
 
@@ -328,11 +418,13 @@ def _style_axes(ax, ax2):
 
     ax.set_title("Rectified Voltage & Current vs Packet Timestamp", color=text_color)
     ax.set_xlabel("Packet Timestamp (ms)", color=text_color)
-    ax.set_ylabel("Voltage (mV)", color="#003087")
-    ax.tick_params(axis="y", labelcolor="#003087", colors=text_color)
+    ax.set_ylabel("Voltage (mV)", color="#D32F2F")
+    ax.tick_params(axis="y", labelcolor="#D32F2F", colors=text_color)
+    ax.yaxis.set_major_locator(MultipleLocator(1000))
     ax.tick_params(axis="x", colors=text_color)
-    ax2.set_ylabel("Current (mA)", color="#1A50A5")
-    ax2.tick_params(axis="y", labelcolor="#1A50A5")
+    ax2.set_ylabel("Current (mA)", color="#1565C0")
+    ax2.tick_params(axis="y", labelcolor="#1565C0")
+    ax2.yaxis.set_major_locator(MultipleLocator(500))
 
     # Update spine colors
     for spine in ax.spines.values():

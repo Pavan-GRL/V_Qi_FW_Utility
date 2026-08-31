@@ -9,22 +9,28 @@ from typing import Callable, Optional
 
 from protocol import (
     parse_cps_response_frame,
+    parse_raw_rect_counts_response,
+    parse_new_streamer_response,
+    reassemble_new_streamer_message,
+    split_cps_payload_lines,
+    split_new_streamer_records,
     hex_dump_spaces,
     hex_dump_multiline,
     format_ts,
-    ts_bytes_to_hex,
-    ts_bytes_to_le,
 )
 from logger import (
-    SESSION_LOG_FILE, CPS_LOG_FILE, CPS_CSV_FILE,
-    append_text, csv_init_if_needed, csv_append_row
+    SESSION_LOG_FILE, CPS_LOG_FILE, CPS_CSV_FILE, CPS_ALL_READS_CSV_FILE,
+    append_text, csv_init_if_needed, csv_append_row, build_cps_csv_row
 )
 
 # -----------------------------
 # Streamer / pacing config
 # -----------------------------
 CPS_POLL_HEX = "07 08 00 00 00 08 00 A1"
+NEW_CPS_POLL_HEX = "07 09 00 00 00 08 00 A1 01"
 CPS_POLL_INTERVAL_SEC = 0.100   # streamer cadence
+RAW_RECT_COUNTS_POLL_HEX = "07 09 00 00 00 07 00 02 00"
+RAW_RECT_COUNTS_POLL_INTERVAL_SEC = 0.100
 
 # Your requirement:
 RX_WAIT_PER_TRY_SEC = 0.500     # 500ms wait per try (increased for slow STM responses)
@@ -96,6 +102,7 @@ class NetClient:
         port: int,
         on_status: Callable[[str], None],
         on_cps: Callable[[dict], None],
+        on_raw_counts: Optional[Callable[[dict], None]] = None,
         on_tx: Optional[Callable[[str, str], None]] = None,
         on_rx: Optional[Callable[[str, str], None]] = None,
         on_retry_prompt: Optional[Callable[[str, str], bool]] = None,  # (hex_str, tag) -> should_retry
@@ -105,6 +112,7 @@ class NetClient:
         self.port = port
         self.on_status = on_status
         self.on_cps = on_cps
+        self.on_raw_counts = on_raw_counts
         self.on_tx = on_tx
         self.on_rx = on_rx
         self.on_retry_prompt = on_retry_prompt
@@ -123,6 +131,14 @@ class NetClient:
         self._cps_poll_bytes = bytes_from_hex(CPS_POLL_HEX)
         self._next_cps_poll = 0.0
         self.plot_enabled: bool = False   # controlled by UI checkbox
+        self.raw_counts_enabled: bool = False
+        self._next_raw_counts_poll = 0.0
+        self._prefer_raw_counts_poll = False
+        self.new_streamer_enabled: bool = False
+        self.reassemble_streamer_messages: bool = False
+        self._streamer_control_on = False
+        self._streamer_control_pending = False
+        self._streamer_control_done = threading.Event()
 
         # inflight tracking
         self._waiting = False
@@ -140,14 +156,35 @@ class NetClient:
         self._exclusive_active = False
         self._exclusive_owner = ""
         self._exclusive_prev_plot_enabled = False
+        self._runtime_blocked = False
+        self._runtime_block_owner = ""
+        self._runtime_prev_plot_enabled = False
+        self._cps_line_buf = bytearray()
+        self._new_stream_buf = bytearray()
+        self._new_message_buf = bytearray()
+        self._new_message_info: dict = {}
+        self._new_expected_read: int | None = None
+        self._cps_csv_frame_index = 0
 
     def start(self):
         self._stop.clear()
-        csv_init_if_needed(self._csv_lock, CPS_CSV_FILE)
+        try:
+            csv_init_if_needed(self._csv_lock, CPS_CSV_FILE)
+            csv_init_if_needed(self._csv_lock, CPS_ALL_READS_CSV_FILE)
+        except PermissionError as exc:
+            self._log_session(
+                f"[{host_ts_full()}] [WARN] CPS CSV is locked; connection will continue "
+                f"without CSV writes until it is unlocked: {exc}\n"
+            )
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
 
     def stop(self):
+        if self._thread and self._thread.is_alive():
+            if self._streamer_control_on:
+                self.set_streamer_control(False)
+            if self._streamer_control_pending:
+                self._streamer_control_done.wait(timeout=1.6)
         self._stop.set()
         with self._exclusive_cv:
             self._exclusive_cv.notify_all()
@@ -156,6 +193,9 @@ class NetClient:
     def send_hex(self, hex_str: str, tag: str = "MANUAL"):
         b = bytes_from_hex(hex_str)
         with self._exclusive_cv:
+            if self._runtime_blocked:
+                owner = self._runtime_block_owner or "firmware update"
+                raise RuntimeError(f"Runtime API traffic is blocked by {owner}")
             if self._exclusive_requested or self._exclusive_active:
                 owner = self._exclusive_owner or "another operation"
                 raise RuntimeError(f"Socket is reserved for {owner}")
@@ -163,10 +203,75 @@ class NetClient:
 
     def send_bytes(self, b: bytes, tag: str = "MANUAL"):
         with self._exclusive_cv:
+            if self._runtime_blocked:
+                owner = self._runtime_block_owner or "firmware update"
+                raise RuntimeError(f"Runtime API traffic is blocked by {owner}")
             if self._exclusive_requested or self._exclusive_active:
                 owner = self._exclusive_owner or "another operation"
                 raise RuntimeError(f"Socket is reserved for {owner}")
         self.send_q.put((b, tag, hex_dump_spaces(b)))
+
+    def configure_streamer_format(self, use_new: bool):
+        """Select the poll/parser format and discard reassembly state from the other format."""
+        self.new_streamer_enabled = bool(use_new)
+        self._cps_line_buf.clear()
+        self._new_stream_buf.clear()
+        self._new_message_buf.clear()
+        self._new_message_info.clear()
+        self._new_expected_read = None
+
+    def configure_streamer_message_reassembly(self, enabled: bool):
+        self.reassemble_streamer_messages = bool(enabled)
+        self._new_message_buf.clear()
+        self._new_message_info.clear()
+
+    def set_streamer_control(self, enabled: bool):
+        if self._streamer_control_pending and self._thread and self._thread.is_alive():
+            self._streamer_control_done.wait(timeout=1.6)
+        value = 0x01 if enabled else 0x00
+        frame = bytes.fromhex("01 09 00 01 00 A1 00 02") + bytes([value])
+        self._streamer_control_done.clear()
+        self._streamer_control_on = bool(enabled)
+        self._streamer_control_pending = True
+        self.send_q.put((frame, "AUTO", hex_dump_spaces(frame)))
+
+    def set_runtime_api_blocked(self, blocked: bool, owner: str = "firmware update"):
+        with self._exclusive_cv:
+            if blocked:
+                if not self._runtime_blocked:
+                    self._runtime_prev_plot_enabled = self.plot_enabled
+                self._runtime_blocked = True
+                self._runtime_block_owner = owner
+                self.plot_enabled = False
+                while True:
+                    try:
+                        self.send_q.get_nowait()
+                    except queue.Empty:
+                        break
+                self._waiting = False
+                self._retry_count = 0
+                self._inflight_payload = b""
+                self._inflight_hex = ""
+                self._inflight_tag = "AUTO"
+                self._inflight_kind = "GET"
+                self._try_deadline = 0.0
+                self._next_cps_poll = time.monotonic() + CPS_POLL_INTERVAL_SEC
+                self._cps_line_buf.clear()
+                self._cps_csv_frame_index = 0
+                self._log_session(
+                    f"[{host_ts_full()}] [INFO] Runtime API traffic blocked by {owner}\n"
+                )
+            else:
+                if self._runtime_blocked:
+                    self._log_session(
+                        f"[{host_ts_full()}] [INFO] Runtime API traffic unblocked by {owner}\n"
+                    )
+                self._runtime_blocked = False
+                self._runtime_block_owner = ""
+                self.plot_enabled = self._runtime_prev_plot_enabled
+                self._runtime_prev_plot_enabled = False
+                self._next_cps_poll = time.monotonic() + CPS_POLL_INTERVAL_SEC
+            self._exclusive_cv.notify_all()
 
     def acquire_exclusive_socket(self, owner: str, timeout: float = 10.0) -> socket.socket:
         deadline = time.monotonic() + max(timeout, 0.1)
@@ -235,6 +340,7 @@ class NetClient:
             self._inflight_kind = "GET"
             self._try_deadline = 0.0
             self._next_cps_poll = time.monotonic() + CPS_POLL_INTERVAL_SEC
+            self._cps_line_buf.clear()
             sock = self._sock
             self._exclusive_cv.notify_all()
 
@@ -274,6 +380,8 @@ class NetClient:
         self.on_status(f"Connected ✅{port_info}")
         self._log_session(f"[{host_ts_full()}] [INFO] Connected to {self.ip}:{self.port}{port_info}\n")
         self._next_cps_poll = time.monotonic() + CPS_POLL_INTERVAL_SEC
+        self._cps_line_buf.clear()
+        self._cps_csv_frame_index = 0
         return sock
 
     def _close_socket(self):
@@ -302,6 +410,8 @@ class NetClient:
         self._inflight_tag = "AUTO"
         self._inflight_kind = "GET"
         self._try_deadline = 0.0
+        self._cps_line_buf.clear()
+        self._cps_csv_frame_index = 0
 
     def _kind_from_payload(self, payload: bytes) -> str:
         if not payload:
@@ -347,6 +457,9 @@ class NetClient:
         return True
 
     def _handle_rx_frame(self, frame: bytes):
+        completed_streamer_control = (
+            self._inflight_kind == "SET" and self._streamer_control_pending
+        )
         rx_hex = hex_dump_spaces(frame)
         if self._inflight_kind == "SET":
             rx_tag = "AUTO_ECHO"  if self._inflight_tag == "AUTO" else "MANUAL_ECHO"
@@ -367,12 +480,102 @@ class NetClient:
             self._inflight_kind = "GET"
             self._retry_count = 0
             self._try_deadline = 0.0
+            if completed_streamer_control:
+                self._streamer_control_pending = False
+                self._streamer_control_done.set()
+
+        # New subtype-0x01 streamer: one API response may contain partial or
+        # multiple binary-framed records, so keep a persistent record buffer.
+        if len(frame) >= 13 and frame[3:9] == bytes.fromhex("00 00 07 00 02 00"):
+            info = parse_raw_rect_counts_response(frame)
+            info["_host_ts_full"] = now
+            if self.on_raw_counts:
+                self.on_raw_counts(info)
+            return
+
+        if len(frame) >= 9 and frame[5:9] == bytes.fromhex("08 00 A1 01"):
+            response_info = parse_new_streamer_response(frame)
+            discontinuity = (
+                self._new_expected_read is not None
+                and response_info["valid_stream_byte_count"]
+                and response_info["read_index"] != self._new_expected_read
+            )
+            if discontinuity:
+                self._log_session(
+                    f"[{now}] [WARN] Streamer read-index discontinuity: "
+                    f"expected={self._new_expected_read}, got={response_info['read_index']}\n"
+                )
+            if response_info["streamer_overflow"]:
+                self._log_session(f"[{now}] [WARN] Streamer overflow/data loss reported\n")
+            if discontinuity or response_info["streamer_overflow"]:
+                self._new_message_buf.clear()
+                self._new_message_info.clear()
+            self._new_expected_read = response_info["expected_next_read"]
+            for packet_info in split_new_streamer_records(response_info, self._new_stream_buf):
+                self._cps_csv_frame_index += 1
+                packet_info["_host_ts_full"] = now
+                packet_info["_rx_tag"] = rx_tag
+                packet_info["_csv_frame_index"] = self._cps_csv_frame_index
+                try:
+                    csv_append_row(
+                        self._csv_lock, CPS_ALL_READS_CSV_FILE,
+                        build_cps_csv_row(now, packet_info),
+                    )
+                except PermissionError as csv_err:
+                    self._log_session(
+                        f"[{host_ts_full()}] [WARN] All-reads CSV write skipped "
+                        f"(file locked): {csv_err}\n"
+                    )
+                self._log_cps(
+                    "----- NEW STREAMER RECORD -----\n"
+                    f"host_ts       : {now}\n"
+                    f"read_index    : {packet_info['read_index']}\n"
+                    f"write_index   : {packet_info['write_index']}\n"
+                    f"overflow      : {packet_info['streamer_overflow']}\n"
+                    f"uart_ts       : {format_ts(packet_info['cps_ts_bytes'])}\n"
+                    f"rect_v        : {packet_info['rect_v']}\n"
+                    f"rect_i        : {packet_info['rect_i']}\n"
+                    f"pay_len       : {packet_info['pay_len']}\n"
+                    f"ascii         :\n{packet_info['payload'].decode('ascii', errors='replace')}\n\n"
+                )
+                message_infos = (
+                    reassemble_new_streamer_message(
+                        packet_info, self._new_message_buf, self._new_message_info
+                    )
+                    if self.reassemble_streamer_messages
+                    else [packet_info]
+                )
+                for message_info in message_infos:
+                    try:
+                        csv_append_row(
+                            self._csv_lock, CPS_CSV_FILE,
+                            build_cps_csv_row(now, message_info),
+                        )
+                    except PermissionError as csv_err:
+                        self._log_session(
+                            f"[{host_ts_full()}] [WARN] CSV write skipped (file locked): {csv_err}\n"
+                        )
+                    self.on_cps(message_info)
+            return
 
         # CPS decode if CPS response
         if len(frame) >= 8 and frame[3:8] == bytes.fromhex("00 00 08 00 A1"):
             info = parse_cps_response_frame(frame)
             info["_host_ts_full"] = now
             info["_rx_tag"] = rx_tag
+            self._cps_csv_frame_index += 1
+            info["_csv_frame_index"] = self._cps_csv_frame_index
+
+            try:
+                csv_append_row(
+                    self._csv_lock, CPS_ALL_READS_CSV_FILE,
+                    build_cps_csv_row(now, info),
+                )
+            except PermissionError as csv_err:
+                self._log_session(
+                    f"[{host_ts_full()}] [WARN] All-reads CSV write skipped "
+                    f"(file locked): {csv_err}\n"
+                )
 
             ht = now
             cps_entry = (
@@ -408,30 +611,18 @@ class NetClient:
                 )
             self._log_cps(cps_entry)
 
-            # CSV row
-            pwr_ts_hex = ts_bytes_to_hex(info["pwr_ts_bytes"])
-            pwr_ts_le = ts_bytes_to_le(info["pwr_ts_bytes"])
-            cps_ts_hex = ""
-            cps_ts_le = ""
-            if info["cps_ts_bytes"] is not None:
-                cps_ts_hex = ts_bytes_to_hex(info["cps_ts_bytes"])
-                cps_ts_le = str(ts_bytes_to_le(info["cps_ts_bytes"]))
-            rect_v = "" if info["rect_v"] is None else str(info["rect_v"])
-            rect_i = "" if info["rect_i"] is None else str(info["rect_i"])
+            for packet_info in split_cps_payload_lines(info, self._cps_line_buf):
+                if int(packet_info.get("payload_valid", 0)) == 1:
+                    row = build_cps_csv_row(ht, packet_info)
+                    try:
+                        csv_append_row(self._csv_lock, CPS_CSV_FILE, row)
+                    except PermissionError as csv_err:
+                        self._log_session(
+                            f"[{host_ts_full()}] [WARN] CSV write skipped "
+                            f"(file locked): {csv_err}\n"
+                        )
 
-            row = [
-                ht, pwr_ts_hex, pwr_ts_le,
-                cps_ts_hex, cps_ts_le,
-                rect_v, rect_i,
-                info["pwr_len"], info["read_idx"], info["write_idx"],
-                info["payload_valid"], info["pay_len"],
-            ]
-            try:
-                csv_append_row(self._csv_lock, CPS_CSV_FILE, row)
-            except PermissionError as csv_err:
-                self._log_session(f"[{host_ts_full()}] [WARN] CSV write skipped (file locked): {csv_err}\n")
-
-            self.on_cps(info)
+                self.on_cps(packet_info)
 
     # ---------------- main loop ----------------
     def _run(self):
@@ -452,8 +643,9 @@ class NetClient:
                         self._exclusive_active = True
                         self._exclusive_cv.notify_all()
                     exclusive_active = self._exclusive_active
+                    runtime_blocked = self._runtime_blocked
 
-                if exclusive_active:
+                if exclusive_active or runtime_blocked:
                     time.sleep(LOOP_SLEEP_SEC)
                     continue
 
@@ -541,9 +733,23 @@ class NetClient:
 
                 # 4) Idle -> streamer CPS poll on 100ms cadence (only if enabled)
                 now_m = time.monotonic()
-                if self.plot_enabled and now_m >= self._next_cps_poll:
+                cps_due = self.plot_enabled and now_m >= self._next_cps_poll
+                raw_due = (
+                    self.raw_counts_enabled
+                    and now_m >= self._next_raw_counts_poll
+                )
+                if raw_due and (self._prefer_raw_counts_poll or not cps_due):
+                    self._next_raw_counts_poll = now_m + RAW_RECT_COUNTS_POLL_INTERVAL_SEC
+                    self._prefer_raw_counts_poll = False
+                    poll_bytes = bytes_from_hex(RAW_RECT_COUNTS_POLL_HEX)
+                    self._arm_inflight(poll_bytes, "AUTO", RAW_RECT_COUNTS_POLL_HEX)
+                    self._send_inflight(sock)
+                elif cps_due:
                     self._next_cps_poll = now_m + CPS_POLL_INTERVAL_SEC
-                    self._arm_inflight(self._cps_poll_bytes, "AUTO", CPS_POLL_HEX)
+                    self._prefer_raw_counts_poll = True
+                    poll_hex = NEW_CPS_POLL_HEX if self.new_streamer_enabled else CPS_POLL_HEX
+                    poll_bytes = bytes_from_hex(poll_hex)
+                    self._arm_inflight(poll_bytes, "AUTO", poll_hex)
                     self._send_inflight(sock)
 
                 time.sleep(LOOP_SLEEP_SEC)
