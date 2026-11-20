@@ -261,12 +261,23 @@ def split_new_streamer_records(response_info: dict, pending: bytearray) -> list[
         if payload_len > STREAMER_MAX_PAYLOAD:
             del pending[0]
             continue
-        record_size = 18 + payload_len
-        if len(pending) < record_size:
+        payload_end = 14 + payload_len
+        legacy_record_size = payload_end + len(STREAMER_EOP)
+        if len(pending) < legacy_record_size:
             break
-        if bytes(pending[14 + payload_len:record_size]) != STREAMER_EOP:
-            del pending[0]
-            continue
+
+        packet_timestamp_bytes = None
+        if bytes(pending[payload_end:legacy_record_size]) == STREAMER_EOP:
+            record_size = legacy_record_size
+        else:
+            timestamp_eop_start = payload_end + 10
+            record_size = timestamp_eop_start + len(STREAMER_EOP)
+            if len(pending) < record_size:
+                break
+            if bytes(pending[timestamp_eop_start:record_size]) != STREAMER_EOP:
+                del pending[0]
+                continue
+            packet_timestamp_bytes = bytes(pending[payload_end:timestamp_eop_start])
 
         record = bytes(pending[:record_size])
         del pending[:record_size]
@@ -274,6 +285,15 @@ def split_new_streamer_records(response_info: dict, pending: bytearray) -> list[
         rect_v = int.from_bytes(record[8:10], "little")
         rect_i = int.from_bytes(record[10:12], "little")
         payload = record[14:14 + payload_len]
+        packet_start_ts_bytes = (
+            packet_timestamp_bytes[:4] if packet_timestamp_bytes is not None else None
+        )
+        packet_end_ts_bytes = (
+            packet_timestamp_bytes[4:8] if packet_timestamp_bytes is not None else None
+        )
+        packet_reserved_bytes = (
+            packet_timestamp_bytes[8:10] if packet_timestamp_bytes is not None else None
+        )
         records.append({
             "streamer_format": "new",
             "pwr_ts_bytes": record[4:8],
@@ -287,6 +307,18 @@ def split_new_streamer_records(response_info: dict, pending: bytearray) -> list[
             "cps_ts_bytes": record[4:8],
             "pay_len": payload_len,
             "payload": payload,
+            "packet_timestamp_bytes": packet_timestamp_bytes,
+            "packet_start_ts_bytes": packet_start_ts_bytes,
+            "packet_start_ts": (
+                int.from_bytes(packet_start_ts_bytes, "little")
+                if packet_start_ts_bytes is not None else None
+            ),
+            "packet_end_ts_bytes": packet_end_ts_bytes,
+            "packet_end_ts": (
+                int.from_bytes(packet_end_ts_bytes, "little")
+                if packet_end_ts_bytes is not None else None
+            ),
+            "packet_reserved_bytes": packet_reserved_bytes,
             "cps_raw_only": record,
             "streamer_flags": response_info.get("streamer_flags", 0),
             "streamer_overflow": response_info.get("streamer_overflow", False),

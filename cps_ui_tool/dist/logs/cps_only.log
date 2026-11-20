@@ -1,0 +1,6851 @@
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.514
+read_index    : 0
+write_index   : 450
+overflow      : False
+uart_ts       : B3 14 54 00 (le=5510323)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.514
+read_index    : 0
+write_index   : 450
+overflow      : False
+uart_ts       : BD 14 54 00 (le=5510333)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.514
+read_index    : 0
+write_index   : 450
+overflow      : False
+uart_ts       : C7 14 54 00 (le=5510343)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.514
+read_index    : 0
+write_index   : 450
+overflow      : False
+uart_ts       : D1 14 54 00 (le=5510353)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.514
+read_index    : 0
+write_index   : 450
+overflow      : False
+uart_ts       : DB 14 54 00 (le=5510363)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.662
+read_index    : 256
+write_index   : 1200
+overflow      : False
+uart_ts       : E5 14 54 00 (le=5510373)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.662
+read_index    : 256
+write_index   : 1200
+overflow      : False
+uart_ts       : EF 14 54 00 (le=5510383)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.662
+read_index    : 256
+write_index   : 1200
+overflow      : False
+uart_ts       : F9 14 54 00 (le=5510393)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.662
+read_index    : 256
+write_index   : 1200
+overflow      : False
+uart_ts       : 03 15 54 00 (le=5510403)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.662
+read_index    : 256
+write_index   : 1200
+overflow      : False
+uart_ts       : 0D 15 54 00 (le=5510413)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.814
+read_index    : 512
+write_index   : 1950
+overflow      : False
+uart_ts       : 17 15 54 00 (le=5510423)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.814
+read_index    : 512
+write_index   : 1950
+overflow      : False
+uart_ts       : 21 15 54 00 (le=5510433)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.814
+read_index    : 512
+write_index   : 1950
+overflow      : False
+uart_ts       : 2B 15 54 00 (le=5510443)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.814
+read_index    : 512
+write_index   : 1950
+overflow      : False
+uart_ts       : 35 15 54 00 (le=5510453)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.814
+read_index    : 512
+write_index   : 1950
+overflow      : False
+uart_ts       : 3F 15 54 00 (le=5510463)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.961
+read_index    : 768
+write_index   : 2700
+overflow      : False
+uart_ts       : 49 15 54 00 (le=5510473)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.961
+read_index    : 768
+write_index   : 2700
+overflow      : False
+uart_ts       : 53 15 54 00 (le=5510483)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.961
+read_index    : 768
+write_index   : 2700
+overflow      : False
+uart_ts       : 5D 15 54 00 (le=5510493)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.961
+read_index    : 768
+write_index   : 2700
+overflow      : False
+uart_ts       : 67 15 54 00 (le=5510503)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:28.961
+read_index    : 768
+write_index   : 2700
+overflow      : False
+uart_ts       : 71 15 54 00 (le=5510513)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.114
+read_index    : 1024
+write_index   : 3450
+overflow      : False
+uart_ts       : 7B 15 54 00 (le=5510523)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.114
+read_index    : 1024
+write_index   : 3450
+overflow      : False
+uart_ts       : 85 15 54 00 (le=5510533)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.114
+read_index    : 1024
+write_index   : 3450
+overflow      : False
+uart_ts       : 8F 15 54 00 (le=5510543)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.114
+read_index    : 1024
+write_index   : 3450
+overflow      : False
+uart_ts       : 99 15 54 00 (le=5510553)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.114
+read_index    : 1024
+write_index   : 3450
+overflow      : False
+uart_ts       : A3 15 54 00 (le=5510563)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.264
+read_index    : 1280
+write_index   : 104
+overflow      : False
+uart_ts       : AD 15 54 00 (le=5510573)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.264
+read_index    : 1280
+write_index   : 104
+overflow      : False
+uart_ts       : B7 15 54 00 (le=5510583)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.264
+read_index    : 1280
+write_index   : 104
+overflow      : False
+uart_ts       : C1 15 54 00 (le=5510593)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.264
+read_index    : 1280
+write_index   : 104
+overflow      : False
+uart_ts       : CB 15 54 00 (le=5510603)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.264
+read_index    : 1280
+write_index   : 104
+overflow      : False
+uart_ts       : D5 15 54 00 (le=5510613)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.431
+read_index    : 1536
+write_index   : 954
+overflow      : False
+uart_ts       : DF 15 54 00 (le=5510623)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.431
+read_index    : 1536
+write_index   : 954
+overflow      : False
+uart_ts       : E9 15 54 00 (le=5510633)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.431
+read_index    : 1536
+write_index   : 954
+overflow      : False
+uart_ts       : F3 15 54 00 (le=5510643)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.431
+read_index    : 1536
+write_index   : 954
+overflow      : False
+uart_ts       : FD 15 54 00 (le=5510653)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.431
+read_index    : 1536
+write_index   : 954
+overflow      : False
+uart_ts       : 07 16 54 00 (le=5510663)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.597
+read_index    : 1804
+write_index   : 1804
+overflow      : True
+uart_ts       : 25 16 54 00 (le=5510693)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.597
+read_index    : 1804
+write_index   : 1804
+overflow      : True
+uart_ts       : 2F 16 54 00 (le=5510703)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.597
+read_index    : 1804
+write_index   : 1804
+overflow      : True
+uart_ts       : 39 16 54 00 (le=5510713)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.597
+read_index    : 1804
+write_index   : 1804
+overflow      : True
+uart_ts       : 43 16 54 00 (le=5510723)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.747
+read_index    : 2304
+write_index   : 2304
+overflow      : True
+uart_ts       : 89 16 54 00 (le=5510793)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.747
+read_index    : 2304
+write_index   : 2304
+overflow      : True
+uart_ts       : 93 16 54 00 (le=5510803)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.747
+read_index    : 2304
+write_index   : 2304
+overflow      : True
+uart_ts       : 9D 16 54 00 (le=5510813)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.747
+read_index    : 2304
+write_index   : 2304
+overflow      : True
+uart_ts       : A7 16 54 00 (le=5510823)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.897
+read_index    : 3004
+write_index   : 3004
+overflow      : True
+uart_ts       : 15 17 54 00 (le=5510933)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.897
+read_index    : 3004
+write_index   : 3004
+overflow      : True
+uart_ts       : 1F 17 54 00 (le=5510943)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.897
+read_index    : 3004
+write_index   : 3004
+overflow      : True
+uart_ts       : 29 17 54 00 (le=5510953)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:29.897
+read_index    : 3004
+write_index   : 3004
+overflow      : True
+uart_ts       : 33 17 54 00 (le=5510963)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.045
+read_index    : 3481
+write_index   : 3481
+overflow      : True
+uart_ts       : 6F 17 54 00 (le=5511023)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.045
+read_index    : 3481
+write_index   : 3481
+overflow      : True
+uart_ts       : 79 17 54 00 (le=5511033)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.045
+read_index    : 3481
+write_index   : 3481
+overflow      : True
+uart_ts       : 83 17 54 00 (le=5511043)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.045
+read_index    : 3481
+write_index   : 3481
+overflow      : True
+uart_ts       : 8D 17 54 00 (le=5511053)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.198
+read_index    : 3737
+write_index   : 3688
+overflow      : False
+uart_ts       : 97 17 54 00 (le=5511063)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.198
+read_index    : 3737
+write_index   : 3688
+overflow      : False
+uart_ts       : A1 17 54 00 (le=5511073)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.198
+read_index    : 3737
+write_index   : 3688
+overflow      : False
+uart_ts       : AB 17 54 00 (le=5511083)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.198
+read_index    : 3737
+write_index   : 3688
+overflow      : False
+uart_ts       : B5 17 54 00 (le=5511093)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.198
+read_index    : 3737
+write_index   : 3688
+overflow      : False
+uart_ts       : BF 17 54 00 (le=5511103)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.345
+read_index    : 3993
+write_index   : 3893
+overflow      : False
+uart_ts       : C9 17 54 00 (le=5511113)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.345
+read_index    : 3993
+write_index   : 3893
+overflow      : False
+uart_ts       : D3 17 54 00 (le=5511123)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.345
+read_index    : 3993
+write_index   : 3893
+overflow      : False
+uart_ts       : DD 17 54 00 (le=5511133)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.345
+read_index    : 3993
+write_index   : 3893
+overflow      : False
+uart_ts       : E7 17 54 00 (le=5511143)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.345
+read_index    : 3993
+write_index   : 3893
+overflow      : False
+uart_ts       : F1 17 54 00 (le=5511153)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : FB 17 54 00 (le=5511163)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : 05 18 54 00 (le=5511173)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : 0F 18 54 00 (le=5511183)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : 19 18 54 00 (le=5511193)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : 23 18 54 00 (le=5511203)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.496
+read_index    : 153
+write_index   : 144
+overflow      : False
+uart_ts       : 2D 18 54 00 (le=5511213)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.649
+read_index    : 457
+write_index   : 457
+overflow      : True
+uart_ts       : 4B 18 54 00 (le=5511243)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.649
+read_index    : 457
+write_index   : 457
+overflow      : True
+uart_ts       : 55 18 54 00 (le=5511253)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.649
+read_index    : 457
+write_index   : 457
+overflow      : True
+uart_ts       : 5F 18 54 00 (le=5511263)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.649
+read_index    : 457
+write_index   : 457
+overflow      : True
+uart_ts       : 69 18 54 00 (le=5511273)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.796
+read_index    : 713
+write_index   : 712
+overflow      : False
+uart_ts       : 73 18 54 00 (le=5511283)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.796
+read_index    : 713
+write_index   : 712
+overflow      : False
+uart_ts       : 7D 18 54 00 (le=5511293)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.796
+read_index    : 713
+write_index   : 712
+overflow      : False
+uart_ts       : 87 18 54 00 (le=5511303)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.796
+read_index    : 713
+write_index   : 712
+overflow      : False
+uart_ts       : 91 18 54 00 (le=5511313)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.796
+read_index    : 713
+write_index   : 712
+overflow      : False
+uart_ts       : 9B 18 54 00 (le=5511323)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.964
+read_index    : 1013
+write_index   : 1013
+overflow      : True
+uart_ts       : B9 18 54 00 (le=5511353)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.964
+read_index    : 1013
+write_index   : 1013
+overflow      : True
+uart_ts       : C3 18 54 00 (le=5511363)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.964
+read_index    : 1013
+write_index   : 1013
+overflow      : True
+uart_ts       : CD 18 54 00 (le=5511373)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:30.964
+read_index    : 1013
+write_index   : 1013
+overflow      : True
+uart_ts       : D7 18 54 00 (le=5511383)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.113
+read_index    : 1269
+write_index   : 1246
+overflow      : False
+uart_ts       : E1 18 54 00 (le=5511393)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.113
+read_index    : 1269
+write_index   : 1246
+overflow      : False
+uart_ts       : EB 18 54 00 (le=5511403)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.113
+read_index    : 1269
+write_index   : 1246
+overflow      : False
+uart_ts       : F5 18 54 00 (le=5511413)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.113
+read_index    : 1269
+write_index   : 1246
+overflow      : False
+uart_ts       : FF 18 54 00 (le=5511423)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.113
+read_index    : 1269
+write_index   : 1246
+overflow      : False
+uart_ts       : 09 19 54 00 (le=5511433)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.262
+read_index    : 1671
+write_index   : 1671
+overflow      : True
+uart_ts       : 3B 19 54 00 (le=5511483)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.262
+read_index    : 1671
+write_index   : 1671
+overflow      : True
+uart_ts       : 45 19 54 00 (le=5511493)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.262
+read_index    : 1671
+write_index   : 1671
+overflow      : True
+uart_ts       : 4F 19 54 00 (le=5511503)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.262
+read_index    : 1671
+write_index   : 1671
+overflow      : True
+uart_ts       : 59 19 54 00 (le=5511513)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.413
+read_index    : 2421
+write_index   : 2421
+overflow      : True
+uart_ts       : 0D 1A 54 00 (le=5511693)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.413
+read_index    : 2421
+write_index   : 2421
+overflow      : True
+uart_ts       : 17 1A 54 00 (le=5511703)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.413
+read_index    : 2421
+write_index   : 2421
+overflow      : True
+uart_ts       : 21 1A 54 00 (le=5511713)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.413
+read_index    : 2421
+write_index   : 2421
+overflow      : True
+uart_ts       : 2B 1A 54 00 (le=5511723)
+rect_v        : 0
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.561
+read_index    : 3171
+write_index   : 3171
+overflow      : True
+uart_ts       : AC 1A 54 00 (le=5511852)
+rect_v        : 6354
+rect_i        : 0
+pay_len       : 12
+ascii         :
+ASK: 01 A3 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.561
+read_index    : 3171
+write_index   : 3171
+overflow      : True
+uart_ts       : AC 1A 54 00 (le=5511852)
+rect_v        : 6354
+rect_i        : 0
+pay_len       : 35
+ascii         :
+Signal StrengthFW_INFO: Ping_Phase
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.561
+read_index    : 3171
+write_index   : 3171
+overflow      : True
+uart_ts       : AC 1A 54 00 (le=5511852)
+rect_v        : 6354
+rect_i        : 0
+pay_len       : 6
+ascii         :
+: 163
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.561
+read_index    : 3171
+write_index   : 3171
+overflow      : True
+uart_ts       : CE 1A 54 00 (le=5511886)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 30
+ascii         :
+ASK: 71 22 00 18 E4 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.561
+read_index    : 3171
+write_index   : 3171
+overflow      : True
+uart_ts       : CE 1A 54 00 (le=5511886)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 15
+ascii         :
+Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.714
+read_index    : 3921
+write_index   : 3921
+overflow      : True
+uart_ts       : 63 1C 54 00 (le=5512291)
+rect_v        : 6707
+rect_i        : 0
+pay_len       : 42
+ascii         :
+Extended Power Transmitter Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.714
+read_index    : 3921
+write_index   : 3921
+overflow      : True
+uart_ts       : 6F 1C 54 00 (le=5512303)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 12
+ascii         :
+ASK: 07 30 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.714
+read_index    : 3921
+write_index   : 3921
+overflow      : True
+uart_ts       : 6F 1C 54 00 (le=5512303)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 38
+ascii         :
+General Request: [PTx Identification]
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.846
+read_index    : 525
+write_index   : 525
+overflow      : True
+uart_ts       : 7B 1D 54 00 (le=5512571)
+rect_v        : 6698
+rect_i        : 0
+pay_len       : 44
+ascii         :
+Get Request: {PTx Power Modes Capabilities}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.846
+read_index    : 525
+write_index   : 525
+overflow      : True
+uart_ts       : F1 1D 54 00 (le=5512689)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 24
+ascii         :
+FSK: 5A 09 30 31 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.846
+read_index    : 525
+write_index   : 525
+overflow      : True
+uart_ts       : F1 1D 54 00 (le=5512689)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 24
+ascii         :
+Power Mode Capabilities
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.846
+read_index    : 525
+write_index   : 525
+overflow      : True
+uart_ts       : FE 1D 54 00 (le=5512702)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 12
+ascii         :
+ASK: 13 58 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.982
+read_index    : 1175
+write_index   : 1175
+overflow      : True
+uart_ts       : 3A 1F 54 00 (le=5513018)
+rect_v        : 6698
+rect_i        : 0
+pay_len       : 15
+ascii         :
+MatedQ Results
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.982
+read_index    : 1175
+write_index   : 1175
+overflow      : True
+uart_ts       : 48 1F 54 00 (le=5513032)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 05 0C 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.982
+read_index    : 1175
+write_index   : 1175
+overflow      : True
+uart_ts       : 48 1F 54 00 (le=5513032)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 34
+ascii         :
+Specific Request: {Re-ping delay}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.982
+read_index    : 1175
+write_index   : 1175
+overflow      : True
+uart_ts       : 72 1F 54 00 (le=5513074)
+rect_v        : 6690
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:31.982
+read_index    : 1175
+write_index   : 1175
+overflow      : True
+uart_ts       : 81 1F 54 00 (le=5513089)
+rect_v        : 6698
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 00 02 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.129
+read_index    : 1925
+write_index   : 1925
+overflow      : True
+uart_ts       : 11 20 54 00 (le=5513233)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.129
+read_index    : 1925
+write_index   : 1925
+overflow      : True
+uart_ts       : 1B 20 54 00 (le=5513243)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.129
+read_index    : 1925
+write_index   : 1925
+overflow      : True
+uart_ts       : 25 20 54 00 (le=5513253)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.129
+read_index    : 1925
+write_index   : 1925
+overflow      : True
+uart_ts       : 2F 20 54 00 (le=5513263)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.278
+read_index    : 2675
+write_index   : 2675
+overflow      : True
+uart_ts       : A7 20 54 00 (le=5513383)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.278
+read_index    : 2675
+write_index   : 2675
+overflow      : True
+uart_ts       : B1 20 54 00 (le=5513393)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.278
+read_index    : 2675
+write_index   : 2675
+overflow      : True
+uart_ts       : BB 20 54 00 (le=5513403)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.278
+read_index    : 2675
+write_index   : 2675
+overflow      : True
+uart_ts       : C5 20 54 00 (le=5513413)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.430
+read_index    : 3425
+write_index   : 3425
+overflow      : True
+uart_ts       : 3D 21 54 00 (le=5513533)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.430
+read_index    : 3425
+write_index   : 3425
+overflow      : True
+uart_ts       : 47 21 54 00 (le=5513543)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.430
+read_index    : 3425
+write_index   : 3425
+overflow      : True
+uart_ts       : 51 21 54 00 (le=5513553)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.430
+read_index    : 3425
+write_index   : 3425
+overflow      : True
+uart_ts       : 5B 21 54 00 (le=5513563)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.579
+read_index    : 3925
+write_index   : 3925
+overflow      : True
+uart_ts       : A1 21 54 00 (le=5513633)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.579
+read_index    : 3925
+write_index   : 3925
+overflow      : True
+uart_ts       : AB 21 54 00 (le=5513643)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.579
+read_index    : 3925
+write_index   : 3925
+overflow      : True
+uart_ts       : B5 21 54 00 (le=5513653)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.579
+read_index    : 3925
+write_index   : 3925
+overflow      : True
+uart_ts       : BF 21 54 00 (le=5513663)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.715
+read_index    : 479
+write_index   : 479
+overflow      : True
+uart_ts       : 23 22 54 00 (le=5513763)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.715
+read_index    : 479
+write_index   : 479
+overflow      : True
+uart_ts       : 2D 22 54 00 (le=5513773)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.715
+read_index    : 479
+write_index   : 479
+overflow      : True
+uart_ts       : 37 22 54 00 (le=5513783)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.715
+read_index    : 479
+write_index   : 479
+overflow      : True
+uart_ts       : 41 22 54 00 (le=5513793)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.864
+read_index    : 1229
+write_index   : 1229
+overflow      : True
+uart_ts       : B9 22 54 00 (le=5513913)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.864
+read_index    : 1229
+write_index   : 1229
+overflow      : True
+uart_ts       : C3 22 54 00 (le=5513923)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.864
+read_index    : 1229
+write_index   : 1229
+overflow      : True
+uart_ts       : CD 22 54 00 (le=5513933)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:32.864
+read_index    : 1229
+write_index   : 1229
+overflow      : True
+uart_ts       : D7 22 54 00 (le=5513943)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.013
+read_index    : 1979
+write_index   : 1979
+overflow      : True
+uart_ts       : 4F 23 54 00 (le=5514063)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.013
+read_index    : 1979
+write_index   : 1979
+overflow      : True
+uart_ts       : 59 23 54 00 (le=5514073)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.013
+read_index    : 1979
+write_index   : 1979
+overflow      : True
+uart_ts       : 63 23 54 00 (le=5514083)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.013
+read_index    : 1979
+write_index   : 1979
+overflow      : True
+uart_ts       : 6D 23 54 00 (le=5514093)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.162
+read_index    : 2729
+write_index   : 2729
+overflow      : True
+uart_ts       : E5 23 54 00 (le=5514213)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.162
+read_index    : 2729
+write_index   : 2729
+overflow      : True
+uart_ts       : EF 23 54 00 (le=5514223)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.162
+read_index    : 2729
+write_index   : 2729
+overflow      : True
+uart_ts       : F9 23 54 00 (le=5514233)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.162
+read_index    : 2729
+write_index   : 2729
+overflow      : True
+uart_ts       : 03 24 54 00 (le=5514243)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.312
+read_index    : 3479
+write_index   : 3479
+overflow      : True
+uart_ts       : 7B 24 54 00 (le=5514363)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.312
+read_index    : 3479
+write_index   : 3479
+overflow      : True
+uart_ts       : 85 24 54 00 (le=5514373)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.312
+read_index    : 3479
+write_index   : 3479
+overflow      : True
+uart_ts       : 8F 24 54 00 (le=5514383)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.312
+read_index    : 3479
+write_index   : 3479
+overflow      : True
+uart_ts       : 99 24 54 00 (le=5514393)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.446
+read_index    : 33
+write_index   : 33
+overflow      : True
+uart_ts       : 39 25 54 00 (le=5514553)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.446
+read_index    : 33
+write_index   : 33
+overflow      : True
+uart_ts       : 43 25 54 00 (le=5514563)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.446
+read_index    : 33
+write_index   : 33
+overflow      : True
+uart_ts       : 4D 25 54 00 (le=5514573)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.446
+read_index    : 33
+write_index   : 33
+overflow      : True
+uart_ts       : 57 25 54 00 (le=5514583)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.596
+read_index    : 783
+write_index   : 783
+overflow      : True
+uart_ts       : CF 25 54 00 (le=5514703)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.596
+read_index    : 783
+write_index   : 783
+overflow      : True
+uart_ts       : D9 25 54 00 (le=5514713)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.596
+read_index    : 783
+write_index   : 783
+overflow      : True
+uart_ts       : E3 25 54 00 (le=5514723)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.596
+read_index    : 783
+write_index   : 783
+overflow      : True
+uart_ts       : ED 25 54 00 (le=5514733)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.730
+read_index    : 1483
+write_index   : 1483
+overflow      : True
+uart_ts       : 5B 26 54 00 (le=5514843)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.730
+read_index    : 1483
+write_index   : 1483
+overflow      : True
+uart_ts       : 65 26 54 00 (le=5514853)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.730
+read_index    : 1483
+write_index   : 1483
+overflow      : True
+uart_ts       : 6F 26 54 00 (le=5514863)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.730
+read_index    : 1483
+write_index   : 1483
+overflow      : True
+uart_ts       : 79 26 54 00 (le=5514873)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.879
+read_index    : 2133
+write_index   : 2133
+overflow      : True
+uart_ts       : DD 26 54 00 (le=5514973)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.879
+read_index    : 2133
+write_index   : 2133
+overflow      : True
+uart_ts       : E7 26 54 00 (le=5514983)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.879
+read_index    : 2133
+write_index   : 2133
+overflow      : True
+uart_ts       : F1 26 54 00 (le=5514993)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:33.879
+read_index    : 2133
+write_index   : 2133
+overflow      : True
+uart_ts       : FB 26 54 00 (le=5515003)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.030
+read_index    : 2683
+write_index   : 2683
+overflow      : True
+uart_ts       : 4B 27 54 00 (le=5515083)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.030
+read_index    : 2683
+write_index   : 2683
+overflow      : True
+uart_ts       : 55 27 54 00 (le=5515093)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.030
+read_index    : 2683
+write_index   : 2683
+overflow      : True
+uart_ts       : 5F 27 54 00 (le=5515103)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.030
+read_index    : 2683
+write_index   : 2683
+overflow      : True
+uart_ts       : 69 27 54 00 (le=5515113)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.180
+read_index    : 3402
+write_index   : 3402
+overflow      : True
+uart_ts       : D7 27 54 00 (le=5515223)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.180
+read_index    : 3402
+write_index   : 3402
+overflow      : True
+uart_ts       : E1 27 54 00 (le=5515233)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.180
+read_index    : 3402
+write_index   : 3402
+overflow      : True
+uart_ts       : EB 27 54 00 (le=5515243)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.180
+read_index    : 3402
+write_index   : 3402
+overflow      : True
+uart_ts       : F5 27 54 00 (le=5515253)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.329
+read_index    : 3673
+write_index   : 3673
+overflow      : True
+uart_ts       : 09 28 54 00 (le=5515273)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.329
+read_index    : 3673
+write_index   : 3673
+overflow      : True
+uart_ts       : 13 28 54 00 (le=5515283)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.329
+read_index    : 3673
+write_index   : 3673
+overflow      : True
+uart_ts       : 1D 28 54 00 (le=5515293)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.329
+read_index    : 3673
+write_index   : 3673
+overflow      : True
+uart_ts       : 27 28 54 00 (le=5515303)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.329
+read_index    : 3673
+write_index   : 3673
+overflow      : True
+uart_ts       : 31 28 54 00 (le=5515313)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.478
+read_index    : 3972
+write_index   : 3972
+overflow      : True
+uart_ts       : 45 28 54 00 (le=5515333)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.478
+read_index    : 3972
+write_index   : 3972
+overflow      : True
+uart_ts       : 4F 28 54 00 (le=5515343)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.478
+read_index    : 3972
+write_index   : 3972
+overflow      : True
+uart_ts       : 59 28 54 00 (le=5515353)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.478
+read_index    : 3972
+write_index   : 3972
+overflow      : True
+uart_ts       : 63 28 54 00 (le=5515363)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.629
+read_index    : 371
+write_index   : 371
+overflow      : True
+uart_ts       : A9 28 54 00 (le=5515433)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.629
+read_index    : 371
+write_index   : 371
+overflow      : True
+uart_ts       : B3 28 54 00 (le=5515443)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.629
+read_index    : 371
+write_index   : 371
+overflow      : True
+uart_ts       : BD 28 54 00 (le=5515453)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.629
+read_index    : 371
+write_index   : 371
+overflow      : True
+uart_ts       : C7 28 54 00 (le=5515463)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.780
+read_index    : 831
+write_index   : 831
+overflow      : True
+uart_ts       : 03 29 54 00 (le=5515523)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.780
+read_index    : 831
+write_index   : 831
+overflow      : True
+uart_ts       : 0D 29 54 00 (le=5515533)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.780
+read_index    : 831
+write_index   : 831
+overflow      : True
+uart_ts       : 17 29 54 00 (le=5515543)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.780
+read_index    : 831
+write_index   : 831
+overflow      : True
+uart_ts       : 21 29 54 00 (le=5515553)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.780
+read_index    : 831
+write_index   : 831
+overflow      : True
+uart_ts       : 2B 29 54 00 (le=5515563)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.930
+read_index    : 1116
+write_index   : 1116
+overflow      : True
+uart_ts       : 3F 29 54 00 (le=5515583)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.930
+read_index    : 1116
+write_index   : 1116
+overflow      : True
+uart_ts       : 49 29 54 00 (le=5515593)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.930
+read_index    : 1116
+write_index   : 1116
+overflow      : True
+uart_ts       : 53 29 54 00 (le=5515603)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:34.930
+read_index    : 1116
+write_index   : 1116
+overflow      : True
+uart_ts       : 5D 29 54 00 (le=5515613)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.064
+read_index    : 1372
+write_index   : 1311
+overflow      : False
+uart_ts       : 67 29 54 00 (le=5515623)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.064
+read_index    : 1372
+write_index   : 1311
+overflow      : False
+uart_ts       : 71 29 54 00 (le=5515633)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.064
+read_index    : 1372
+write_index   : 1311
+overflow      : False
+uart_ts       : 7B 29 54 00 (le=5515643)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.064
+read_index    : 1372
+write_index   : 1311
+overflow      : False
+uart_ts       : 85 29 54 00 (le=5515653)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.064
+read_index    : 1372
+write_index   : 1311
+overflow      : False
+uart_ts       : 8F 29 54 00 (le=5515663)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.214
+read_index    : 1634
+write_index   : 1634
+overflow      : True
+uart_ts       : AD 29 54 00 (le=5515693)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.214
+read_index    : 1634
+write_index   : 1634
+overflow      : True
+uart_ts       : B7 29 54 00 (le=5515703)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.214
+read_index    : 1634
+write_index   : 1634
+overflow      : True
+uart_ts       : C1 29 54 00 (le=5515713)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.214
+read_index    : 1634
+write_index   : 1634
+overflow      : True
+uart_ts       : CB 29 54 00 (le=5515723)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.363
+read_index    : 2070
+write_index   : 2070
+overflow      : True
+uart_ts       : FD 29 54 00 (le=5515773)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.363
+read_index    : 2070
+write_index   : 2070
+overflow      : True
+uart_ts       : 43 2A 54 00 (le=5515843)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.363
+read_index    : 2070
+write_index   : 2070
+overflow      : True
+uart_ts       : 4D 2A 54 00 (le=5515853)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.363
+read_index    : 2070
+write_index   : 2070
+overflow      : True
+uart_ts       : 57 2A 54 00 (le=5515863)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.514
+read_index    : 2439
+write_index   : 2439
+overflow      : True
+uart_ts       : 89 2A 54 00 (le=5515913)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.514
+read_index    : 2439
+write_index   : 2439
+overflow      : True
+uart_ts       : 93 2A 54 00 (le=5515923)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.514
+read_index    : 2439
+write_index   : 2439
+overflow      : True
+uart_ts       : 9D 2A 54 00 (le=5515933)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.514
+read_index    : 2439
+write_index   : 2439
+overflow      : True
+uart_ts       : A7 2A 54 00 (le=5515943)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.663
+read_index    : 2972
+write_index   : 2972
+overflow      : True
+uart_ts       : ED 2A 54 00 (le=5516013)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.663
+read_index    : 2972
+write_index   : 2972
+overflow      : True
+uart_ts       : F7 2A 54 00 (le=5516023)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.663
+read_index    : 2972
+write_index   : 2972
+overflow      : True
+uart_ts       : 01 2B 54 00 (le=5516033)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.663
+read_index    : 2972
+write_index   : 2972
+overflow      : True
+uart_ts       : 0B 2B 54 00 (le=5516043)
+rect_v        : 6715
+rect_i        : 0
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.663
+read_index    : 2972
+write_index   : 2972
+overflow      : True
+uart_ts       : 26 2B 54 00 (le=5516070)
+rect_v        : 15888
+rect_i        : 0
+pay_len       : 14
+ascii         :
+Ping Detected
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.814
+read_index    : 3405
+write_index   : 3405
+overflow      : True
+uart_ts       : 54 2B 54 00 (le=5516116)
+rect_v        : 15846
+rect_i        : 0
+pay_len       : 30
+ascii         :
+ASK: 71 22 00 18 E4 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.814
+read_index    : 3405
+write_index   : 3405
+overflow      : True
+uart_ts       : 54 2B 54 00 (le=5516116)
+rect_v        : 15846
+rect_i        : 0
+pay_len       : 15
+ascii         :
+Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.814
+read_index    : 3405
+write_index   : 3405
+overflow      : True
+uart_ts       : 54 2B 54 00 (le=5516116)
+rect_v        : 15846
+rect_i        : 0
+pay_len       : 29
+ascii         :
+FW_INFO: Configuration_Phase
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.814
+read_index    : 3405
+write_index   : 3405
+overflow      : True
+uart_ts       : 99 2B 54 00 (le=5516185)
+rect_v        : 15846
+rect_i        : 0
+pay_len       : 33
+ascii         :
+ASK: 81 FE 00 03 07 6E 5A 64 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.963
+read_index    : 3768
+write_index   : 3768
+overflow      : True
+uart_ts       : 1F 2C 54 00 (le=5516319)
+rect_v        : 15518
+rect_i        : 0
+pay_len       : 27
+ascii         :
+FW_INFO: Negotiation_Phase
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.963
+read_index    : 3768
+write_index   : 3768
+overflow      : True
+uart_ts       : 32 2C 54 00 (le=5516338)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:35.963
+read_index    : 3768
+write_index   : 3768
+overflow      : True
+uart_ts       : 32 2C 54 00 (le=5516338)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 43
+ascii         :
+Get Request: {PTx Extended Identification}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.095
+read_index    : 82
+write_index   : 82
+overflow      : True
+uart_ts       : C3 2C 54 00 (le=5516483)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 18
+ascii         :
+FSK: 30 22 01 0E 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.095
+read_index    : 82
+write_index   : 82
+overflow      : True
+uart_ts       : C3 2C 54 00 (le=5516483)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 33
+ascii         :
+Power Transmitter Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.095
+read_index    : 82
+write_index   : 82
+overflow      : True
+uart_ts       : CF 2C 54 00 (le=5516495)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 07 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.095
+read_index    : 82
+write_index   : 82
+overflow      : True
+uart_ts       : CF 2C 54 00 (le=5516495)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 31
+ascii         :
+Get Request: {PTx Estimated K}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.246
+read_index    : 428
+write_index   : 428
+overflow      : True
+uart_ts       : 13 2D 54 00 (le=5516563)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 21
+ascii         :
+Enabled Data Streams
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.246
+read_index    : 428
+write_index   : 428
+overflow      : True
+uart_ts       : 48 2D 54 00 (le=5516616)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 15
+ascii         :
+FSK: 2F 00 02 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.246
+read_index    : 428
+write_index   : 428
+overflow      : True
+uart_ts       : 48 2D 54 00 (le=5516616)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 21
+ascii         :
+Enabled Data Streams
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.246
+read_index    : 428
+write_index   : 428
+overflow      : True
+uart_ts       : 57 2D 54 00 (le=5516631)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 03 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.378
+read_index    : 684
+write_index   : 601
+overflow      : False
+uart_ts       : 57 2D 54 00 (le=5516631)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 52
+ascii         :
+Get Request: {PTx Power Loss Accounting Parameters}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.378
+read_index    : 684
+write_index   : 601
+overflow      : False
+uart_ts       : 97 2D 54 00 (le=5516695)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 24
+ascii         :
+FSK: 5F 00 27 10 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.378
+read_index    : 684
+write_index   : 601
+overflow      : False
+uart_ts       : 97 2D 54 00 (le=5516695)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 33
+ascii         :
+Power Loss Accounting Parameters
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.378
+read_index    : 684
+write_index   : 601
+overflow      : False
+uart_ts       : A6 2D 54 00 (le=5516710)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 30
+ascii         :
+ASK: 78 00 00 17 00 CF 27 10 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.513
+read_index    : 940
+write_index   : 911
+overflow      : False
+uart_ts       : A6 2D 54 00 (le=5516710)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 33
+ascii         :
+Power Loss Accounting Parameters
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.513
+read_index    : 940
+write_index   : 911
+overflow      : False
+uart_ts       : E7 2D 54 00 (le=5516775)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.513
+read_index    : 940
+write_index   : 911
+overflow      : False
+uart_ts       : F5 2D 54 00 (le=5516789)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 39
+ascii         :
+ASK: 90 00 4E 20 07 6C 02 8A 07 F7 9A 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.513
+read_index    : 940
+write_index   : 911
+overflow      : False
+uart_ts       : F5 2D 54 00 (le=5516789)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 35
+ascii         :
+Power Loss Accounting Parameters 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.513
+read_index    : 940
+write_index   : 911
+overflow      : False
+uart_ts       : 45 2E 54 00 (le=5516869)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.663
+read_index    : 1196
+write_index   : 1084
+overflow      : False
+uart_ts       : 53 2E 54 00 (le=5516883)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 48
+ascii         :
+ASK: A8 00 00 00 00 64 00 64 00 00 00 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.663
+read_index    : 1196
+write_index   : 1084
+overflow      : False
+uart_ts       : 53 2E 54 00 (le=5516883)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 19
+ascii         :
+MatedQ Coefficient
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.663
+read_index    : 1196
+write_index   : 1084
+overflow      : False
+uart_ts       : B4 2E 54 00 (le=5516980)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.663
+read_index    : 1196
+write_index   : 1084
+overflow      : False
+uart_ts       : C2 2E 54 00 (le=5516994)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 0C 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.663
+read_index    : 1196
+write_index   : 1084
+overflow      : False
+uart_ts       : C2 2E 54 00 (le=5516994)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 34
+ascii         :
+Get Request: {PTx MatedQ Results}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.831
+read_index    : 1452
+write_index   : 1429
+overflow      : False
+uart_ts       : FD 2E 54 00 (le=5517053)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 21
+ascii         :
+FSK: 40 01 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.831
+read_index    : 1452
+write_index   : 1429
+overflow      : False
+uart_ts       : FD 2E 54 00 (le=5517053)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 15
+ascii         :
+MatedQ Results
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.831
+read_index    : 1452
+write_index   : 1429
+overflow      : False
+uart_ts       : 0C 2F 54 00 (le=5517068)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 33
+ascii         :
+ASK: 84 00 00 00 0A 00 38 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.831
+read_index    : 1452
+write_index   : 1429
+overflow      : False
+uart_ts       : 0C 2F 54 00 (le=5517068)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 37
+ascii         :
+Extended Power Receiver Capabilities
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.831
+read_index    : 1452
+write_index   : 1429
+overflow      : False
+uart_ts       : 52 2F 54 00 (le=5517138)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.979
+read_index    : 1737
+write_index   : 1737
+overflow      : True
+uart_ts       : B0 2F 54 00 (le=5517232)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 36
+ascii         :
+FSK: 88 00 4E 20 00 00 00 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.979
+read_index    : 1737
+write_index   : 1737
+overflow      : True
+uart_ts       : B0 2F 54 00 (le=5517232)
+rect_v        : 15476
+rect_i        : 0
+pay_len       : 35
+ascii         :
+Power Loss Accounting Parameters 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:36.979
+read_index    : 1737
+write_index   : 1737
+overflow      : True
+uart_ts       : BF 2F 54 00 (le=5517247)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 A0 02 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.114
+read_index    : 1993
+write_index   : 1909
+overflow      : False
+uart_ts       : BF 2F 54 00 (le=5517247)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 59
+ascii         :
+Specific Request: {Power Loss Accounting Format Selection}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.114
+read_index    : 1993
+write_index   : 1909
+overflow      : False
+uart_ts       : E3 2F 54 00 (le=5517283)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.114
+read_index    : 1993
+write_index   : 1909
+overflow      : False
+uart_ts       : F0 2F 54 00 (le=5517296)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 04 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.114
+read_index    : 1993
+write_index   : 1909
+overflow      : False
+uart_ts       : F0 2F 54 00 (le=5517296)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 42
+ascii         :
+Get Request: {PTx Extended Capabilities }
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.114
+read_index    : 1993
+write_index   : 1909
+overflow      : False
+uart_ts       : 40 30 54 00 (le=5517376)
+rect_v        : 15493
+rect_i        : 0
+pay_len       : 36
+ascii         :
+FSK: 8F 10 00 FA 00 96 4A 19 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.263
+read_index    : 2253
+write_index   : 2253
+overflow      : True
+uart_ts       : 4C 30 54 00 (le=5517388)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 10 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.263
+read_index    : 2253
+write_index   : 2253
+overflow      : True
+uart_ts       : 4D 30 54 00 (le=5517389)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 44
+ascii         :
+Get Request: {PTx Calibration Capabilities}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.263
+read_index    : 2253
+write_index   : 2253
+overflow      : True
+uart_ts       : 8A 30 54 00 (le=5517450)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 21
+ascii         :
+FSK: 43 00 01 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.396
+read_index    : 2509
+write_index   : 2253
+overflow      : False
+uart_ts       : 8A 30 54 00 (le=5517450)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 25
+ascii         :
+Calibration Capabilities
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.396
+read_index    : 2509
+write_index   : 2253
+overflow      : False
+uart_ts       : 96 30 54 00 (le=5517462)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 F3 96 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.396
+read_index    : 2509
+write_index   : 2253
+overflow      : False
+uart_ts       : 98 30 54 00 (le=5517464)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 51
+ascii         :
+Specific Request: {Extended Power Level Selection}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.396
+read_index    : 2509
+write_index   : 2253
+overflow      : False
+uart_ts       : BB 30 54 00 (le=5517499)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.396
+read_index    : 2509
+write_index   : 2253
+overflow      : False
+uart_ts       : C9 30 54 00 (le=5517513)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 F5 05 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.546
+read_index    : 2765
+write_index   : 2425
+overflow      : False
+uart_ts       : C9 30 54 00 (le=5517513)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 48
+ascii         :
+Specific Request: {Cloak Ping Delay (low Byte)}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.546
+read_index    : 2765
+write_index   : 2425
+overflow      : False
+uart_ts       : ED 30 54 00 (le=5517549)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.546
+read_index    : 2765
+write_index   : 2425
+overflow      : False
+uart_ts       : F9 30 54 00 (le=5517561)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 F8 01 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.546
+read_index    : 2765
+write_index   : 2425
+overflow      : False
+uart_ts       : FB 30 54 00 (le=5517563)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 47
+ascii         :
+Specific Request: {Cloak Detect Ping Interval}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.546
+read_index    : 2765
+write_index   : 2425
+overflow      : False
+uart_ts       : 1F 31 54 00 (le=5517599)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.695
+read_index    : 3021
+write_index   : 2597
+overflow      : False
+uart_ts       : 2C 31 54 00 (le=5517612)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 0A 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.695
+read_index    : 3021
+write_index   : 2597
+overflow      : False
+uart_ts       : 2C 31 54 00 (le=5517612)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 44
+ascii         :
+Get Request: {PTx Power Modes Capabilities}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.695
+read_index    : 3021
+write_index   : 2597
+overflow      : False
+uart_ts       : 6C 31 54 00 (le=5517676)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 24
+ascii         :
+FSK: 5A 18 30 31 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.695
+read_index    : 3021
+write_index   : 2597
+overflow      : False
+uart_ts       : 6C 31 54 00 (le=5517676)
+rect_v        : 15485
+rect_i        : 0
+pay_len       : 24
+ascii         :
+Power Mode Capabilities
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.695
+read_index    : 3021
+write_index   : 2597
+overflow      : False
+uart_ts       : 79 31 54 00 (le=5517689)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 12
+ascii         :
+ASK: 13 58 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.845
+read_index    : 3277
+write_index   : 3010
+overflow      : False
+uart_ts       : 79 31 54 00 (le=5517689)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 20
+ascii         :
+Mode Select Request
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.845
+read_index    : 3277
+write_index   : 3010
+overflow      : False
+uart_ts       : A8 31 54 00 (le=5517736)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 15
+ascii         :
+FSK: 23 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.845
+read_index    : 3277
+write_index   : 3010
+overflow      : False
+uart_ts       : A8 31 54 00 (le=5517736)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 19
+ascii         :
+Mode Select Status
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.845
+read_index    : 3277
+write_index   : 3010
+overflow      : False
+uart_ts       : B6 31 54 00 (le=5517750)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 0B 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.845
+read_index    : 3277
+write_index   : 3010
+overflow      : False
+uart_ts       : B6 31 54 00 (le=5517750)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 53
+ascii         :
+Get Request: {PTx Power Modes Extended Capabilities}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.996
+read_index    : 3533
+write_index   : 3286
+overflow      : False
+uart_ts       : 12 32 54 00 (le=5517842)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 45
+ascii         :
+FSK: A0 00 00 00 41 7D 32 8C C8 C8 96 C8 FA 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.996
+read_index    : 3533
+write_index   : 3286
+overflow      : False
+uart_ts       : 12 32 54 00 (le=5517842)
+rect_v        : 15468
+rect_i        : 0
+pay_len       : 33
+ascii         :
+Power Mode Extended Capabilities
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.996
+read_index    : 3533
+write_index   : 3286
+overflow      : False
+uart_ts       : 21 32 54 00 (le=5517857)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 05 0C 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:37.996
+read_index    : 3533
+write_index   : 3286
+overflow      : False
+uart_ts       : 21 32 54 00 (le=5517857)
+rect_v        : 15502
+rect_i        : 0
+pay_len       : 34
+ascii         :
+Specific Request: {Re-ping delay}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 45 32 54 00 (le=5517893)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 51 32 54 00 (le=5517905)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 20 00 04 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 52 32 54 00 (le=5517906)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 36
+ascii         :
+Specific Request: {End Negotiation}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 76 32 54 00 (le=5517942)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 7A 32 54 00 (le=5517946)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 12
+ascii         :
+Vrect=15510
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.129
+read_index    : 3789
+write_index   : 3495
+overflow      : False
+uart_ts       : 7A 32 54 00 (le=5517946)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.296
+read_index    : 4045
+write_index   : 3735
+overflow      : False
+uart_ts       : 7A 32 54 00 (le=5517946)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.296
+read_index    : 4045
+write_index   : 3735
+overflow      : False
+uart_ts       : 7B 32 54 00 (le=5517947)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 30
+ascii         :
+FW_INFO: Power_Transfer_Phase
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.296
+read_index    : 4045
+write_index   : 3735
+overflow      : False
+uart_ts       : 99 32 54 00 (le=5517977)
+rect_v        : 15510
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.296
+read_index    : 4045
+write_index   : 3735
+overflow      : False
+uart_ts       : D9 32 54 00 (le=5518041)
+rect_v        : 15308
+rect_i        : 2
+pay_len       : 12
+ascii         :
+Vrect=15317
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.296
+read_index    : 4045
+write_index   : 3735
+overflow      : False
+uart_ts       : D9 32 54 00 (le=5518041)
+rect_v        : 15308
+rect_i        : 2
+pay_len       : 12
+ascii         :
+ASK: 19 13 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : D9 32 54 00 (le=5518041)
+rect_v        : 15308
+rect_i        : 2
+pay_len       : 29
+ascii         :
+Extended Control Error: {19}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : F7 32 54 00 (le=5518071)
+rect_v        : 15317
+rect_i        : 2
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : 37 33 54 00 (le=5518135)
+rect_v        : 15493
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15493
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : 37 33 54 00 (le=5518135)
+rect_v        : 15493
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : 37 33 54 00 (le=5518135)
+rect_v        : 15493
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.465
+read_index    : 205
+write_index   : 3944
+overflow      : False
+uart_ts       : 56 33 54 00 (le=5518166)
+rect_v        : 15493
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : 95 33 54 00 (le=5518229)
+rect_v        : 15762
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15754
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : 95 33 54 00 (le=5518229)
+rect_v        : 15762
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 10 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : 95 33 54 00 (le=5518229)
+rect_v        : 15762
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {16}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : B4 33 54 00 (le=5518260)
+rect_v        : 15754
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : F3 33 54 00 (le=5518323)
+rect_v        : 15997
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16006
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.632
+read_index    : 461
+write_index   : 297
+overflow      : False
+uart_ts       : F3 33 54 00 (le=5518323)
+rect_v        : 15997
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 0E 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : F3 33 54 00 (le=5518323)
+rect_v        : 15997
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {14}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : 12 34 54 00 (le=5518354)
+rect_v        : 16006
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : 51 34 54 00 (le=5518417)
+rect_v        : 16232
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16232
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : 51 34 54 00 (le=5518417)
+rect_v        : 16232
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 0D 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : 51 34 54 00 (le=5518417)
+rect_v        : 16232
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {13}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.796
+read_index    : 717
+write_index   : 573
+overflow      : False
+uart_ts       : 70 34 54 00 (le=5518448)
+rect_v        : 16232
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : AE 34 54 00 (le=5518510)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16476
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : AE 34 54 00 (le=5518510)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 0B 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : AE 34 54 00 (le=5518510)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {11}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : 07 35 54 00 (le=5518599)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16476
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : 07 35 54 00 (le=5518599)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 0B 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:38.964
+read_index    : 973
+write_index   : 746
+overflow      : False
+uart_ts       : 07 35 54 00 (le=5518599)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {11}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : 25 35 54 00 (le=5518629)
+rect_v        : 16476
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : 64 35 54 00 (le=5518692)
+rect_v        : 16694
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16694
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : 64 35 54 00 (le=5518692)
+rect_v        : 16694
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 09 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : 64 35 54 00 (le=5518692)
+rect_v        : 16694
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {9}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : 83 35 54 00 (le=5518723)
+rect_v        : 16694
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.131
+read_index    : 1229
+write_index   : 1195
+overflow      : False
+uart_ts       : C3 35 54 00 (le=5518787)
+rect_v        : 16913
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=16913
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : C3 35 54 00 (le=5518787)
+rect_v        : 16913
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 08 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : C3 35 54 00 (le=5518787)
+rect_v        : 16913
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {8}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : E2 35 54 00 (le=5518818)
+rect_v        : 16913
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : 20 36 54 00 (le=5518880)
+rect_v        : 17299
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=17299
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : 20 36 54 00 (le=5518880)
+rect_v        : 17299
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 05 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.297
+read_index    : 1485
+write_index   : 1471
+overflow      : False
+uart_ts       : 20 36 54 00 (le=5518880)
+rect_v        : 17299
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {5}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : 78 36 54 00 (le=5518968)
+rect_v        : 17291
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=17291
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : 78 36 54 00 (le=5518968)
+rect_v        : 17291
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 05 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : 78 36 54 00 (le=5518968)
+rect_v        : 17291
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {5}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : 97 36 54 00 (le=5518999)
+rect_v        : 17291
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : D6 36 54 00 (le=5519062)
+rect_v        : 17635
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=17644
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.458
+read_index    : 1741
+write_index   : 1644
+overflow      : False
+uart_ts       : D6 36 54 00 (le=5519062)
+rect_v        : 17635
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 03 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.628
+read_index    : 2093
+write_index   : 2093
+overflow      : True
+uart_ts       : 35 37 54 00 (le=5519157)
+rect_v        : 17812
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 01 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.628
+read_index    : 2093
+write_index   : 2093
+overflow      : True
+uart_ts       : 35 37 54 00 (le=5519157)
+rect_v        : 17812
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {1}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.628
+read_index    : 2093
+write_index   : 2093
+overflow      : True
+uart_ts       : 54 37 54 00 (le=5519188)
+rect_v        : 17812
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.628
+read_index    : 2093
+write_index   : 2093
+overflow      : True
+uart_ts       : EC 37 54 00 (le=5519340)
+rect_v        : 17887
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=17887
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.628
+read_index    : 2093
+write_index   : 2093
+overflow      : True
+uart_ts       : EC 37 54 00 (le=5519340)
+rect_v        : 17887
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 01 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : EC 37 54 00 (le=5519340)
+rect_v        : 17887
+rect_i        : 1
+pay_len       : 28
+ascii         :
+Extended Control Error: {1}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : 0C 38 54 00 (le=5519372)
+rect_v        : 17887
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : A4 38 54 00 (le=5519524)
+rect_v        : 17971
+rect_i        : 2
+pay_len       : 12
+ascii         :
+Vrect=17963
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : A4 38 54 00 (le=5519524)
+rect_v        : 17971
+rect_i        : 2
+pay_len       : 12
+ascii         :
+ASK: 19 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : A4 38 54 00 (le=5519524)
+rect_v        : 17971
+rect_i        : 2
+pay_len       : 28
+ascii         :
+Extended Control Error: {0}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.796
+read_index    : 2349
+write_index   : 2333
+overflow      : False
+uart_ts       : C3 38 54 00 (le=5519555)
+rect_v        : 17963
+rect_i        : 2
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.945
+read_index    : 2605
+write_index   : 2542
+overflow      : False
+uart_ts       : 26 39 54 00 (le=5519654)
+rect_v        : 17971
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=17973,Vout=17966,Irect=67,Temperature=43
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.945
+read_index    : 2605
+write_index   : 2542
+overflow      : False
+uart_ts       : 29 39 54 00 (le=5519657)
+rect_v        : 17971
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1204,Pest=1538
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.945
+read_index    : 2605
+write_index   : 2542
+overflow      : False
+uart_ts       : 29 39 54 00 (le=5519657)
+rect_v        : 17971
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 06 02 04 B4 46 35 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:39.945
+read_index    : 2605
+write_index   : 2542
+overflow      : False
+uart_ts       : 29 39 54 00 (le=5519657)
+rect_v        : 17971
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.096
+read_index    : 2955
+write_index   : 2955
+overflow      : True
+uart_ts       : BE 39 54 00 (le=5519806)
+rect_v        : 16619
+rect_i        : 3
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.096
+read_index    : 2955
+write_index   : 2955
+overflow      : True
+uart_ts       : 22 3A 54 00 (le=5519906)
+rect_v        : 16610
+rect_i        : 2
+pay_len       : 47
+ascii         :
+Vrect=16612,Vout=16605,Irect=68,Temperature=42
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.096
+read_index    : 2955
+write_index   : 2955
+overflow      : True
+uart_ts       : 26 3A 54 00 (le=5519910)
+rect_v        : 16610
+rect_i        : 2
+pay_len       : 21
+ascii         :
+Prect=1129,Pest=1430
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.231
+read_index    : 3231
+write_index   : 3231
+overflow      : True
+uart_ts       : 26 3A 54 00 (le=5519910)
+rect_v        : 16610
+rect_i        : 2
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.231
+read_index    : 3231
+write_index   : 3231
+overflow      : True
+uart_ts       : 70 3A 54 00 (le=5519984)
+rect_v        : 16610
+rect_i        : 2
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.231
+read_index    : 3231
+write_index   : 3231
+overflow      : True
+uart_ts       : 9C 3A 54 00 (le=5520028)
+rect_v        : 16014
+rect_i        : 2
+pay_len       : 12
+ascii         :
+Vrect=16014
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.231
+read_index    : 3231
+write_index   : 3231
+overflow      : True
+uart_ts       : 9C 3A 54 00 (le=5520028)
+rect_v        : 16014
+rect_i        : 2
+pay_len       : 12
+ascii         :
+ASK: 19 0E 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.231
+read_index    : 3231
+write_index   : 3231
+overflow      : True
+uart_ts       : 9C 3A 54 00 (le=5520028)
+rect_v        : 16014
+rect_i        : 2
+pay_len       : 29
+ascii         :
+Extended Control Error: {14}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.381
+read_index    : 3487
+write_index   : 3440
+overflow      : False
+uart_ts       : BA 3A 54 00 (le=5520058)
+rect_v        : 16014
+rect_i        : 2
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.381
+read_index    : 3487
+write_index   : 3440
+overflow      : False
+uart_ts       : 1D 3B 54 00 (le=5520157)
+rect_v        : 16022
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=16015,Vout=16017,Irect=67,Temperature=42
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.381
+read_index    : 3487
+write_index   : 3440
+overflow      : False
+uart_ts       : 20 3B 54 00 (le=5520160)
+rect_v        : 16022
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1073,Pest=1359
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.381
+read_index    : 3487
+write_index   : 3440
+overflow      : False
+uart_ts       : 20 3B 54 00 (le=5520160)
+rect_v        : 16022
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 4F 04 31 3E 8F 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.381
+read_index    : 3487
+write_index   : 3440
+overflow      : False
+uart_ts       : 20 3B 54 00 (le=5520160)
+rect_v        : 16022
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.546
+read_index    : 3743
+write_index   : 3680
+overflow      : False
+uart_ts       : 6A 3B 54 00 (le=5520234)
+rect_v        : 16022
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.546
+read_index    : 3743
+write_index   : 3680
+overflow      : False
+uart_ts       : 96 3B 54 00 (le=5520278)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15527
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.546
+read_index    : 3743
+write_index   : 3680
+overflow      : False
+uart_ts       : 96 3B 54 00 (le=5520278)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.546
+read_index    : 3743
+write_index   : 3680
+overflow      : False
+uart_ts       : 96 3B 54 00 (le=5520278)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.546
+read_index    : 3743
+write_index   : 3680
+overflow      : False
+uart_ts       : B4 3B 54 00 (le=5520308)
+rect_v        : 15527
+rect_i        : 2
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.713
+read_index    : 3999
+write_index   : 3889
+overflow      : False
+uart_ts       : 16 3C 54 00 (le=5520406)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15528,Vout=15522,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.713
+read_index    : 3999
+write_index   : 3889
+overflow      : False
+uart_ts       : 1A 3C 54 00 (le=5520410)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1040,Pest=1314
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.713
+read_index    : 3999
+write_index   : 3889
+overflow      : False
+uart_ts       : 1A 3C 54 00 (le=5520410)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 22 04 10 3C A8 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.713
+read_index    : 3999
+write_index   : 3889
+overflow      : False
+uart_ts       : 1A 3C 54 00 (le=5520410)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.713
+read_index    : 3999
+write_index   : 3889
+overflow      : False
+uart_ts       : 64 3C 54 00 (le=5520484)
+rect_v        : 15527
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.881
+read_index    : 242
+write_index   : 242
+overflow      : True
+uart_ts       : AD 3C 54 00 (le=5520557)
+rect_v        : 15317
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.881
+read_index    : 242
+write_index   : 242
+overflow      : True
+uart_ts       : 11 3D 54 00 (le=5520657)
+rect_v        : 15317
+rect_i        : 3
+pay_len       : 47
+ascii         :
+Vrect=15308,Vout=15312,Irect=68,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.881
+read_index    : 242
+write_index   : 242
+overflow      : True
+uart_ts       : 14 3D 54 00 (le=5520660)
+rect_v        : 15317
+rect_i        : 3
+pay_len       : 21
+ascii         :
+Prect=1040,Pest=1310
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:40.881
+read_index    : 242
+write_index   : 242
+overflow      : True
+uart_ts       : 14 3D 54 00 (le=5520660)
+rect_v        : 15317
+rect_i        : 3
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1E 04 10 3B CC 00 44 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : 14 3D 54 00 (le=5520660)
+rect_v        : 15317
+rect_i        : 3
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : 5E 3D 54 00 (le=5520734)
+rect_v        : 15317
+rect_i        : 3
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : 8A 3D 54 00 (le=5520778)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15451
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : 8A 3D 54 00 (le=5520778)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : 8A 3D 54 00 (le=5520778)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.030
+read_index    : 498
+write_index   : 482
+overflow      : False
+uart_ts       : A9 3D 54 00 (le=5520809)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.180
+read_index    : 754
+write_index   : 691
+overflow      : False
+uart_ts       : 0F 3E 54 00 (le=5520911)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15458,Vout=15455,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.180
+read_index    : 754
+write_index   : 691
+overflow      : False
+uart_ts       : 0F 3E 54 00 (le=5520911)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1035,Pest=1308
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.180
+read_index    : 754
+write_index   : 691
+overflow      : False
+uart_ts       : 0F 3E 54 00 (le=5520911)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 62 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.180
+read_index    : 754
+write_index   : 691
+overflow      : False
+uart_ts       : 0F 3E 54 00 (le=5520911)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.329
+read_index    : 1010
+write_index   : 967
+overflow      : False
+uart_ts       : 59 3E 54 00 (le=5520985)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.329
+read_index    : 1010
+write_index   : 967
+overflow      : False
+uart_ts       : 84 3E 54 00 (le=5521028)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15451
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.329
+read_index    : 1010
+write_index   : 967
+overflow      : False
+uart_ts       : 84 3E 54 00 (le=5521028)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.329
+read_index    : 1010
+write_index   : 967
+overflow      : False
+uart_ts       : 84 3E 54 00 (le=5521028)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.329
+read_index    : 1010
+write_index   : 967
+overflow      : False
+uart_ts       : A3 3E 54 00 (le=5521059)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.481
+read_index    : 1380
+write_index   : 1380
+overflow      : True
+uart_ts       : 09 3F 54 00 (le=5521161)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.481
+read_index    : 1380
+write_index   : 1380
+overflow      : True
+uart_ts       : 53 3F 54 00 (le=5521235)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.481
+read_index    : 1380
+write_index   : 1380
+overflow      : True
+uart_ts       : 7F 3F 54 00 (le=5521279)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15460
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.481
+read_index    : 1380
+write_index   : 1380
+overflow      : True
+uart_ts       : 7F 3F 54 00 (le=5521279)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.481
+read_index    : 1380
+write_index   : 1380
+overflow      : True
+uart_ts       : 7F 3F 54 00 (le=5521279)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.629
+read_index    : 1636
+write_index   : 1589
+overflow      : False
+uart_ts       : 9F 3F 54 00 (le=5521311)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.629
+read_index    : 1636
+write_index   : 1589
+overflow      : False
+uart_ts       : 02 40 54 00 (le=5521410)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15457,Vout=15455,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.629
+read_index    : 1636
+write_index   : 1589
+overflow      : False
+uart_ts       : 05 40 54 00 (le=5521413)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1035,Pest=1308
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.629
+read_index    : 1636
+write_index   : 1589
+overflow      : False
+uart_ts       : 05 40 54 00 (le=5521413)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 61 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.629
+read_index    : 1636
+write_index   : 1589
+overflow      : False
+uart_ts       : 05 40 54 00 (le=5521413)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.778
+read_index    : 1892
+write_index   : 1829
+overflow      : False
+uart_ts       : 4F 40 54 00 (le=5521487)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.778
+read_index    : 1892
+write_index   : 1829
+overflow      : False
+uart_ts       : 7B 40 54 00 (le=5521531)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15451
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.778
+read_index    : 1892
+write_index   : 1829
+overflow      : False
+uart_ts       : 7B 40 54 00 (le=5521531)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.778
+read_index    : 1892
+write_index   : 1829
+overflow      : False
+uart_ts       : 7B 40 54 00 (le=5521531)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.778
+read_index    : 1892
+write_index   : 1829
+overflow      : False
+uart_ts       : 9A 40 54 00 (le=5521562)
+rect_v        : 15451
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.931
+read_index    : 2479
+write_index   : 2479
+overflow      : True
+uart_ts       : 95 41 54 00 (le=5521813)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.931
+read_index    : 2479
+write_index   : 2479
+overflow      : True
+uart_ts       : FC 41 54 00 (le=5521916)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15459,Vout=15455,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.931
+read_index    : 2479
+write_index   : 2479
+overflow      : True
+uart_ts       : FC 41 54 00 (le=5521916)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1035,Pest=1308
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:41.931
+read_index    : 2479
+write_index   : 2479
+overflow      : True
+uart_ts       : FC 41 54 00 (le=5521916)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 63 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.083
+read_index    : 3279
+write_index   : 3279
+overflow      : True
+uart_ts       : 6E 43 54 00 (le=5522286)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.083
+read_index    : 3279
+write_index   : 3279
+overflow      : True
+uart_ts       : 6E 43 54 00 (le=5522286)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.083
+read_index    : 3279
+write_index   : 3279
+overflow      : True
+uart_ts       : 8D 43 54 00 (le=5522317)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.083
+read_index    : 3279
+write_index   : 3279
+overflow      : True
+uart_ts       : F1 43 54 00 (le=5522417)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15458,Vout=15455,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.230
+read_index    : 3979
+write_index   : 3979
+overflow      : True
+uart_ts       : F0 44 54 00 (le=5522672)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 61 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.230
+read_index    : 3979
+write_index   : 3979
+overflow      : True
+uart_ts       : F0 44 54 00 (le=5522672)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.230
+read_index    : 3979
+write_index   : 3979
+overflow      : True
+uart_ts       : 3A 45 54 00 (le=5522746)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.230
+read_index    : 3979
+write_index   : 3979
+overflow      : True
+uart_ts       : 65 45 54 00 (le=5522789)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15468
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.380
+read_index    : 560
+write_index   : 560
+overflow      : True
+uart_ts       : 60 46 54 00 (le=5523040)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.380
+read_index    : 560
+write_index   : 560
+overflow      : True
+uart_ts       : 80 46 54 00 (le=5523072)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.380
+read_index    : 560
+write_index   : 560
+overflow      : True
+uart_ts       : E3 46 54 00 (le=5523171)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15458,Vout=15455,Irect=67,Temperature=41
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.380
+read_index    : 560
+write_index   : 560
+overflow      : True
+uart_ts       : E6 46 54 00 (le=5523174)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1035,Pest=1308
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.531
+read_index    : 816
+write_index   : 767
+overflow      : False
+uart_ts       : E6 46 54 00 (le=5523174)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 62 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.531
+read_index    : 816
+write_index   : 767
+overflow      : False
+uart_ts       : E6 46 54 00 (le=5523174)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.531
+read_index    : 816
+write_index   : 767
+overflow      : False
+uart_ts       : 30 47 54 00 (le=5523248)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.531
+read_index    : 816
+write_index   : 767
+overflow      : False
+uart_ts       : 5C 47 54 00 (le=5523292)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15460
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.531
+read_index    : 816
+write_index   : 767
+overflow      : False
+uart_ts       : 5C 47 54 00 (le=5523292)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.680
+read_index    : 1072
+write_index   : 972
+overflow      : False
+uart_ts       : 5C 47 54 00 (le=5523292)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.680
+read_index    : 1072
+write_index   : 972
+overflow      : False
+uart_ts       : 7B 47 54 00 (le=5523323)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.680
+read_index    : 1072
+write_index   : 972
+overflow      : False
+uart_ts       : DE 47 54 00 (le=5523422)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 47
+ascii         :
+Vrect=15458,Vout=15455,Irect=67,Temperature=42
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.680
+read_index    : 1072
+write_index   : 972
+overflow      : False
+uart_ts       : E1 47 54 00 (le=5523425)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 21
+ascii         :
+Prect=1035,Pest=1308
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.680
+read_index    : 1072
+write_index   : 972
+overflow      : False
+uart_ts       : E1 47 54 00 (le=5523425)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 1C 04 0B 3C 62 00 43 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.846
+read_index    : 1328
+write_index   : 1212
+overflow      : False
+uart_ts       : E1 47 54 00 (le=5523425)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.846
+read_index    : 1328
+write_index   : 1212
+overflow      : False
+uart_ts       : 2C 48 54 00 (le=5523500)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 8
+ascii         :
+FSK: 00
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.846
+read_index    : 1328
+write_index   : 1212
+overflow      : False
+uart_ts       : 57 48 54 00 (le=5523543)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+Vrect=15460
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.846
+read_index    : 1328
+write_index   : 1212
+overflow      : False
+uart_ts       : 57 48 54 00 (le=5523543)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 12
+ascii         :
+ASK: 19 12 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.846
+read_index    : 1328
+write_index   : 1212
+overflow      : False
+uart_ts       : 57 48 54 00 (le=5523543)
+rect_v        : 15460
+rect_i        : 1
+pay_len       : 29
+ascii         :
+Extended Control Error: {18}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.997
+read_index    : 1632
+write_index   : 1632
+overflow      : True
+uart_ts       : DD 48 54 00 (le=5523677)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 21
+ascii         :
+Prect=1051,Pest=1325
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.997
+read_index    : 1632
+write_index   : 1632
+overflow      : True
+uart_ts       : DD 48 54 00 (le=5523677)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 36
+ascii         :
+ASK: 88 00 05 2D 04 1B 3C 62 00 44 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.997
+read_index    : 1632
+write_index   : 1632
+overflow      : True
+uart_ts       : DD 48 54 00 (le=5523677)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 24
+ascii         :
+Power Loss Accounting 2
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:42.997
+read_index    : 1632
+write_index   : 1632
+overflow      : True
+uart_ts       : 29 49 54 00 (le=5523753)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.142
+read_index    : 1888
+write_index   : 1783
+overflow      : False
+uart_ts       : 33 49 54 00 (le=5523763)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.142
+read_index    : 1888
+write_index   : 1783
+overflow      : False
+uart_ts       : 3D 49 54 00 (le=5523773)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.142
+read_index    : 1888
+write_index   : 1783
+overflow      : False
+uart_ts       : 47 49 54 00 (le=5523783)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.142
+read_index    : 1888
+write_index   : 1783
+overflow      : False
+uart_ts       : 51 49 54 00 (le=5523793)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.142
+read_index    : 1888
+write_index   : 1783
+overflow      : False
+uart_ts       : 5B 49 54 00 (le=5523803)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.296
+read_index    : 2188
+write_index   : 2188
+overflow      : True
+uart_ts       : 79 49 54 00 (le=5523833)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.296
+read_index    : 2188
+write_index   : 2188
+overflow      : True
+uart_ts       : 83 49 54 00 (le=5523843)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.296
+read_index    : 2188
+write_index   : 2188
+overflow      : True
+uart_ts       : 8D 49 54 00 (le=5523853)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.296
+read_index    : 2188
+write_index   : 2188
+overflow      : True
+uart_ts       : 97 49 54 00 (le=5523863)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.445
+read_index    : 2444
+write_index   : 2379
+overflow      : False
+uart_ts       : A1 49 54 00 (le=5523873)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.445
+read_index    : 2444
+write_index   : 2379
+overflow      : False
+uart_ts       : AB 49 54 00 (le=5523883)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.445
+read_index    : 2444
+write_index   : 2379
+overflow      : False
+uart_ts       : B5 49 54 00 (le=5523893)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.445
+read_index    : 2444
+write_index   : 2379
+overflow      : False
+uart_ts       : BF 49 54 00 (le=5523903)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.445
+read_index    : 2444
+write_index   : 2379
+overflow      : False
+uart_ts       : C9 49 54 00 (le=5523913)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.597
+read_index    : 3179
+write_index   : 3179
+overflow      : True
+uart_ts       : 37 4A 54 00 (le=5524023)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.597
+read_index    : 3179
+write_index   : 3179
+overflow      : True
+uart_ts       : 41 4A 54 00 (le=5524033)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.597
+read_index    : 3179
+write_index   : 3179
+overflow      : True
+uart_ts       : 4B 4A 54 00 (le=5524043)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.597
+read_index    : 3179
+write_index   : 3179
+overflow      : True
+uart_ts       : 55 4A 54 00 (le=5524053)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.597
+read_index    : 3179
+write_index   : 3179
+overflow      : True
+uart_ts       : 5F 4A 54 00 (le=5524063)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.746
+read_index    : 3829
+write_index   : 3829
+overflow      : True
+uart_ts       : B9 4A 54 00 (le=5524153)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.746
+read_index    : 3829
+write_index   : 3829
+overflow      : True
+uart_ts       : C3 4A 54 00 (le=5524163)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.746
+read_index    : 3829
+write_index   : 3829
+overflow      : True
+uart_ts       : CD 4A 54 00 (le=5524173)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.746
+read_index    : 3829
+write_index   : 3829
+overflow      : True
+uart_ts       : D7 4A 54 00 (le=5524183)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.746
+read_index    : 3829
+write_index   : 3829
+overflow      : True
+uart_ts       : E1 4A 54 00 (le=5524193)
+rect_v        : 15460
+rect_i        : 2
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.898
+read_index    : 483
+write_index   : 483
+overflow      : True
+uart_ts       : 56 4B 54 00 (le=5524310)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 29
+ascii         :
+FW_INFO: Configuration_Phase
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.898
+read_index    : 483
+write_index   : 483
+overflow      : True
+uart_ts       : 9B 4B 54 00 (le=5524379)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 33
+ascii         :
+ASK: 81 FE 00 01 4E 6E 5A 64 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.898
+read_index    : 483
+write_index   : 483
+overflow      : True
+uart_ts       : 9B 4B 54 00 (le=5524379)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 24
+ascii         :
+Extended Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:43.898
+read_index    : 483
+write_index   : 483
+overflow      : True
+uart_ts       : E3 4B 54 00 (le=5524451)
+rect_v        : 6362
+rect_i        : 0
+pay_len       : 24
+ascii         :
+ASK: 51 0A 00 40 44 8C 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.048
+read_index    : 1233
+write_index   : 1233
+overflow      : True
+uart_ts       : 52 4D 54 00 (le=5524818)
+rect_v        : 6724
+rect_i        : 0
+pay_len       : 33
+ascii         :
+Power Transmitter Identification
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.048
+read_index    : 1233
+write_index   : 1233
+overflow      : True
+uart_ts       : 5D 4D 54 00 (le=5524829)
+rect_v        : 6673
+rect_i        : 0
+pay_len       : 15
+ascii         :
+ASK: 28 00 07 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.048
+read_index    : 1233
+write_index   : 1233
+overflow      : True
+uart_ts       : 5D 4D 54 00 (le=5524829)
+rect_v        : 6673
+rect_i        : 0
+pay_len       : 31
+ascii         :
+Get Request: {PTx Estimated K}
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.048
+read_index    : 1233
+write_index   : 1233
+overflow      : True
+uart_ts       : BC 4D 54 00 (le=5524924)
+rect_v        : 6698
+rect_i        : 0
+pay_len       : 18
+ascii         :
+FSK: 3F 02 0E 78 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.198
+read_index    : 1983
+write_index   : 1983
+overflow      : True
+uart_ts       : D3 4E 54 00 (le=5525203)
+rect_v        : 6648
+rect_i        : 0
+pay_len       : 19
+ascii         :
+Mode Select Status
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.198
+read_index    : 1983
+write_index   : 1983
+overflow      : True
+uart_ts       : E1 4E 54 00 (le=5525217)
+rect_v        : 6614
+rect_i        : 0
+pay_len       : 48
+ascii         :
+ASK: A8 00 00 00 00 64 00 64 00 00 00 00 00 00 
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.198
+read_index    : 1983
+write_index   : 1983
+overflow      : True
+uart_ts       : E1 4E 54 00 (le=5525217)
+rect_v        : 6614
+rect_i        : 0
+pay_len       : 19
+ascii         :
+MatedQ Coefficient
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.198
+read_index    : 1983
+write_index   : 1983
+overflow      : True
+uart_ts       : 49 4F 54 00 (le=5525321)
+rect_v        : 6623
+rect_i        : 0
+pay_len       : 8
+ascii         :
+FSK: FF
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.346
+read_index    : 2733
+write_index   : 2733
+overflow      : True
+uart_ts       : EB 4F 54 00 (le=5525483)
+rect_v        : 46516
+rect_i        : 46516
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.346
+read_index    : 2733
+write_index   : 2733
+overflow      : True
+uart_ts       : F5 4F 54 00 (le=5525493)
+rect_v        : 46516
+rect_i        : 46516
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.346
+read_index    : 2733
+write_index   : 2733
+overflow      : True
+uart_ts       : FF 4F 54 00 (le=5525503)
+rect_v        : 46516
+rect_i        : 46516
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.346
+read_index    : 2733
+write_index   : 2733
+overflow      : True
+uart_ts       : 09 50 54 00 (le=5525513)
+rect_v        : 46516
+rect_i        : 46516
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.495
+read_index    : 3483
+write_index   : 3483
+overflow      : True
+uart_ts       : 95 50 54 00 (le=5525653)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.495
+read_index    : 3483
+write_index   : 3483
+overflow      : True
+uart_ts       : 9F 50 54 00 (le=5525663)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.495
+read_index    : 3483
+write_index   : 3483
+overflow      : True
+uart_ts       : A9 50 54 00 (le=5525673)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.495
+read_index    : 3483
+write_index   : 3483
+overflow      : True
+uart_ts       : B3 50 54 00 (le=5525683)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.646
+read_index    : 137
+write_index   : 137
+overflow      : True
+uart_ts       : 2B 51 54 00 (le=5525803)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.646
+read_index    : 137
+write_index   : 137
+overflow      : True
+uart_ts       : 35 51 54 00 (le=5525813)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.646
+read_index    : 137
+write_index   : 137
+overflow      : True
+uart_ts       : 3F 51 54 00 (le=5525823)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.646
+read_index    : 137
+write_index   : 137
+overflow      : True
+uart_ts       : 49 51 54 00 (le=5525833)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.795
+read_index    : 887
+write_index   : 887
+overflow      : True
+uart_ts       : C1 51 54 00 (le=5525953)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.795
+read_index    : 887
+write_index   : 887
+overflow      : True
+uart_ts       : CB 51 54 00 (le=5525963)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.795
+read_index    : 887
+write_index   : 887
+overflow      : True
+uart_ts       : D5 51 54 00 (le=5525973)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.795
+read_index    : 887
+write_index   : 887
+overflow      : True
+uart_ts       : DF 51 54 00 (le=5525983)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.932
+read_index    : 1387
+write_index   : 1387
+overflow      : True
+uart_ts       : 25 52 54 00 (le=5526053)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.932
+read_index    : 1387
+write_index   : 1387
+overflow      : True
+uart_ts       : 2F 52 54 00 (le=5526063)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.932
+read_index    : 1387
+write_index   : 1387
+overflow      : True
+uart_ts       : 39 52 54 00 (le=5526073)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:44.932
+read_index    : 1387
+write_index   : 1387
+overflow      : True
+uart_ts       : 43 52 54 00 (le=5526083)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.080
+read_index    : 2037
+write_index   : 2037
+overflow      : True
+uart_ts       : A7 52 54 00 (le=5526183)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.080
+read_index    : 2037
+write_index   : 2037
+overflow      : True
+uart_ts       : B1 52 54 00 (le=5526193)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.080
+read_index    : 2037
+write_index   : 2037
+overflow      : True
+uart_ts       : BB 52 54 00 (le=5526203)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.080
+read_index    : 2037
+write_index   : 2037
+overflow      : True
+uart_ts       : C5 52 54 00 (le=5526213)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.231
+read_index    : 2787
+write_index   : 2787
+overflow      : True
+uart_ts       : 3D 53 54 00 (le=5526333)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.231
+read_index    : 2787
+write_index   : 2787
+overflow      : True
+uart_ts       : 47 53 54 00 (le=5526343)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.231
+read_index    : 2787
+write_index   : 2787
+overflow      : True
+uart_ts       : 51 53 54 00 (le=5526353)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.231
+read_index    : 2787
+write_index   : 2787
+overflow      : True
+uart_ts       : 5B 53 54 00 (le=5526363)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.380
+read_index    : 3537
+write_index   : 3537
+overflow      : True
+uart_ts       : D3 53 54 00 (le=5526483)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.380
+read_index    : 3537
+write_index   : 3537
+overflow      : True
+uart_ts       : DD 53 54 00 (le=5526493)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.380
+read_index    : 3537
+write_index   : 3537
+overflow      : True
+uart_ts       : E7 53 54 00 (le=5526503)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.380
+read_index    : 3537
+write_index   : 3537
+overflow      : True
+uart_ts       : F1 53 54 00 (le=5526513)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.530
+read_index    : 191
+write_index   : 191
+overflow      : True
+uart_ts       : 69 54 54 00 (le=5526633)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.530
+read_index    : 191
+write_index   : 191
+overflow      : True
+uart_ts       : 73 54 54 00 (le=5526643)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.530
+read_index    : 191
+write_index   : 191
+overflow      : True
+uart_ts       : 7D 54 54 00 (le=5526653)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.530
+read_index    : 191
+write_index   : 191
+overflow      : True
+uart_ts       : 87 54 54 00 (le=5526663)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.666
+read_index    : 841
+write_index   : 841
+overflow      : True
+uart_ts       : EB 54 54 00 (le=5526763)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.666
+read_index    : 841
+write_index   : 841
+overflow      : True
+uart_ts       : F5 54 54 00 (le=5526773)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.666
+read_index    : 841
+write_index   : 841
+overflow      : True
+uart_ts       : FF 54 54 00 (le=5526783)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.666
+read_index    : 841
+write_index   : 841
+overflow      : True
+uart_ts       : 09 55 54 00 (le=5526793)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.815
+read_index    : 1591
+write_index   : 1591
+overflow      : True
+uart_ts       : BD 55 54 00 (le=5526973)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.815
+read_index    : 1591
+write_index   : 1591
+overflow      : True
+uart_ts       : C7 55 54 00 (le=5526983)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.815
+read_index    : 1591
+write_index   : 1591
+overflow      : True
+uart_ts       : D1 55 54 00 (le=5526993)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.815
+read_index    : 1591
+write_index   : 1591
+overflow      : True
+uart_ts       : DB 55 54 00 (le=5527003)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.963
+read_index    : 2341
+write_index   : 2341
+overflow      : True
+uart_ts       : 53 56 54 00 (le=5527123)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.963
+read_index    : 2341
+write_index   : 2341
+overflow      : True
+uart_ts       : 5D 56 54 00 (le=5527133)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.963
+read_index    : 2341
+write_index   : 2341
+overflow      : True
+uart_ts       : 67 56 54 00 (le=5527143)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+
+----- NEW STREAMER RECORD -----
+host_ts       : 2026-11-20 12:58:45.963
+read_index    : 2341
+write_index   : 2341
+overflow      : True
+uart_ts       : 71 56 54 00 (le=5527153)
+rect_v        : 46516
+rect_i        : 65535
+pay_len       : 22
+ascii         :
+FW_ERR: I2C R/W Error
+
+

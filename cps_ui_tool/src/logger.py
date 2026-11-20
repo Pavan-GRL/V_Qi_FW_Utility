@@ -35,6 +35,9 @@ CSV_HEADER = [
     "QiTimestamp",
     "QiLength",
     "QiPacket",
+    "PacketStartTimestamp",
+    "PacketEndTimestamp",
+    "PacketReserved",
 ]
 
 _EXT_CTRL_ERROR_RE = re.compile(r"Extended Control Error:\s*\{([^}]*)\}")
@@ -150,6 +153,10 @@ def build_cps_csv_row(host_ts: str, info: dict) -> List[str]:
         qi_ts,
         qi_len,
         qi_packet,
+        str(info.get("packet_start_ts", "")),
+        str(info.get("packet_end_ts", "")),
+        hex_dump_spaces(info["packet_reserved_bytes"])
+        if info.get("packet_reserved_bytes") is not None else "",
     ]
 
 

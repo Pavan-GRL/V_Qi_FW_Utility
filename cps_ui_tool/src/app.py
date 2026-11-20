@@ -1288,6 +1288,22 @@ class App(tk.Tk):
             )
         else:
             detail_lines.append("packet_ts : n/a")
+        packet_timestamp_bytes = info.get("packet_timestamp_bytes")
+        if packet_timestamp_bytes is not None:
+            detail_lines.append(
+                f"stream_ts : {self._bytes_hex(packet_timestamp_bytes)}"
+            )
+            detail_lines.append(
+                f"start_ts  : {self._bytes_hex(info['packet_start_ts_bytes'])} "
+                f"(le={info['packet_start_ts']})"
+            )
+            detail_lines.append(
+                f"end_ts    : {self._bytes_hex(info['packet_end_ts_bytes'])} "
+                f"(le={info['packet_end_ts']})"
+            )
+            detail_lines.append(
+                f"reserved  : {self._bytes_hex(info['packet_reserved_bytes'])}"
+            )
         if info.get("_udp_addr"):
             detail_lines.append(f"source    : {info['_udp_addr']}")
 
