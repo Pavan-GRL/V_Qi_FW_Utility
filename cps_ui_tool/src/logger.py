@@ -11,6 +11,7 @@ from protocol import (
     format_ts,
     hex_dump_multiline,
     hex_dump_spaces,
+    format_timestamp_ms,
     ts_bytes_to_le,
 )
 
@@ -33,10 +34,15 @@ CSV_HEADER = [
     "ReadIndex",
     "ValidPacket",
     "QiTimestamp",
+    "QiTimestampMs",
     "QiLength",
     "QiPacket",
-    "PacketStartTimestamp",
-    "PacketEndTimestamp",
+    "PacketStartTimestampUs",
+    "PacketStartTimestampMs",
+    "PacketEndTimestampUs",
+    "PacketEndTimestampMs",
+    "PacketTimestampDeltaUs",
+    "PacketTimestampDeltaMs",
     "PacketReserved",
 ]
 
@@ -151,10 +157,17 @@ def build_cps_csv_row(host_ts: str, info: dict) -> List[str]:
         f"0x{int(info.get('read_idx', 0)):X}",
         _is_valid_qi_packet(qi_packet, payload_valid),
         qi_ts,
+        format_timestamp_ms(ts_bytes_to_le(cps_ts_bytes))
+        if cps_ts_bytes is not None and info.get("streamer_format") == "new" else "",
         qi_len,
         qi_packet,
-        str(info.get("packet_start_ts", "")),
-        str(info.get("packet_end_ts", "")),
+        "" if info.get("packet_start_ts") is None else str(info["packet_start_ts"]),
+        format_timestamp_ms(info.get("packet_start_ts")),
+        "" if info.get("packet_end_ts") is None else str(info["packet_end_ts"]),
+        format_timestamp_ms(info.get("packet_end_ts")),
+        "" if info.get("packet_timestamp_delta") is None
+        else str(info["packet_timestamp_delta"]),
+        format_timestamp_ms(info.get("packet_timestamp_delta")),
         hex_dump_spaces(info["packet_reserved_bytes"])
         if info.get("packet_reserved_bytes") is not None else "",
     ]

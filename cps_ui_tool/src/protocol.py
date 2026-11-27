@@ -19,6 +19,11 @@ def format_ts(ts_bytes: bytes) -> str:
     le_val = ts_bytes_to_le(ts_bytes)
     return f"{hex_dump_spaces(ts_bytes)} (le={le_val})"
 
+def format_timestamp_ms(timestamp_us: int | None) -> str:
+    if timestamp_us is None:
+        return ""
+    return f"{timestamp_us / 1000.0:.3f}"
+
 
 # Calibration API 0x07/0x02 response:
 # 07 0D 00 00 00 07 00 02 00 VV VV II II
@@ -294,6 +299,14 @@ def split_new_streamer_records(response_info: dict, pending: bytearray) -> list[
         packet_reserved_bytes = (
             packet_timestamp_bytes[8:10] if packet_timestamp_bytes is not None else None
         )
+        packet_start_ts = (
+            int.from_bytes(packet_start_ts_bytes, "little")
+            if packet_start_ts_bytes is not None else None
+        )
+        packet_end_ts = (
+            int.from_bytes(packet_end_ts_bytes, "little")
+            if packet_end_ts_bytes is not None else None
+        )
         records.append({
             "streamer_format": "new",
             "pwr_ts_bytes": record[4:8],
@@ -309,14 +322,12 @@ def split_new_streamer_records(response_info: dict, pending: bytearray) -> list[
             "payload": payload,
             "packet_timestamp_bytes": packet_timestamp_bytes,
             "packet_start_ts_bytes": packet_start_ts_bytes,
-            "packet_start_ts": (
-                int.from_bytes(packet_start_ts_bytes, "little")
-                if packet_start_ts_bytes is not None else None
-            ),
+            "packet_start_ts": packet_start_ts,
             "packet_end_ts_bytes": packet_end_ts_bytes,
-            "packet_end_ts": (
-                int.from_bytes(packet_end_ts_bytes, "little")
-                if packet_end_ts_bytes is not None else None
+            "packet_end_ts": packet_end_ts,
+            "packet_timestamp_delta": (
+                packet_end_ts - packet_start_ts
+                if packet_start_ts is not None and packet_end_ts is not None else None
             ),
             "packet_reserved_bytes": packet_reserved_bytes,
             "cps_raw_only": record,

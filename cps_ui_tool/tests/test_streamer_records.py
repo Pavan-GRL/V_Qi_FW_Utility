@@ -1,6 +1,11 @@
 import unittest
 
-from src.protocol import STREAMER_EOP, STREAMER_SOP, split_new_streamer_records
+from src.protocol import (
+    STREAMER_EOP,
+    STREAMER_SOP,
+    format_timestamp_ms,
+    split_new_streamer_records,
+)
 
 
 def make_record(payload: bytes, packet_timestamp: bytes | None = None) -> bytes:
@@ -37,6 +42,9 @@ class SplitNewStreamerRecordsTests(unittest.TestCase):
         self.assertEqual(records[0]["packet_timestamp_bytes"], timestamp)
         self.assertEqual(records[0]["packet_start_ts"], 0x67452301)
         self.assertEqual(records[0]["packet_end_ts"], 0xEFCDAB89)
+        self.assertEqual(
+            records[0]["packet_timestamp_delta"], 0xEFCDAB89 - 0x67452301
+        )
         self.assertEqual(records[0]["packet_reserved_bytes"], bytes.fromhex("10 32"))
         self.assertEqual(records[0]["rect_v"], 1200)
         self.assertEqual(records[0]["rect_i"], 350)
@@ -49,6 +57,35 @@ class SplitNewStreamerRecordsTests(unittest.TestCase):
 
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["packet_timestamp_bytes"], bytes(range(10)))
+
+    def test_recovers_after_discarding_partial_record_on_data_loss(self):
+        partial_record = make_record(b"incomplete", bytes(range(10)))[:-5]
+        self.assertEqual(self.split(partial_record), [])
+        self.assertTrue(self.pending)
+
+        self.pending.clear()
+        records = self.split(make_record(b"recovered", bytes(range(10))))
+
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["payload"], b"recovered")
+
+    def test_formats_microsecond_ticks_as_milliseconds(self):
+        self.assertEqual(format_timestamp_ms(768880), "768.880")
+        self.assertEqual(format_timestamp_ms(101519), "101.519")
+        self.assertEqual(format_timestamp_ms(101519 - 76880), "24.639")
+
+    def test_decodes_duration_from_screenshot_counter_values(self):
+        trailer = (
+            (768880).to_bytes(4, "little")
+            + (101519).to_bytes(4, "little")
+            + bytes.fromhex("00 00")
+        )
+        record = self.split(make_record(b"hello", trailer))[0]
+
+        self.assertEqual(record["packet_start_ts"], 768880)
+        self.assertEqual(record["packet_end_ts"], 101519)
+        self.assertEqual(record["packet_timestamp_delta"], -667361)
+        self.assertEqual(format_timestamp_ms(record["packet_timestamp_delta"]), "-667.361")
 
 
 if __name__ == "__main__":

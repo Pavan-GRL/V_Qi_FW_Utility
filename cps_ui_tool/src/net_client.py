@@ -17,6 +17,7 @@ from protocol import (
     hex_dump_spaces,
     hex_dump_multiline,
     format_ts,
+    format_timestamp_ms,
 )
 from logger import (
     SESSION_LOG_FILE, CPS_LOG_FILE, CPS_CSV_FILE, CPS_ALL_READS_CSV_FILE,
@@ -508,6 +509,7 @@ class NetClient:
             if response_info["streamer_overflow"]:
                 self._log_session(f"[{now}] [WARN] Streamer overflow/data loss reported\n")
             if discontinuity or response_info["streamer_overflow"]:
+                self._new_stream_buf.clear()
                 self._new_message_buf.clear()
                 self._new_message_info.clear()
             self._new_expected_read = response_info["expected_next_read"]
@@ -532,9 +534,15 @@ class NetClient:
                     f"read_index    : {packet_info['read_index']}\n"
                     f"write_index   : {packet_info['write_index']}\n"
                     f"overflow      : {packet_info['streamer_overflow']}\n"
-                    f"uart_ts       : {format_ts(packet_info['cps_ts_bytes'])}\n"
-                    f"packet_start_ts: {packet_info['packet_start_ts']}\n"
-                    f"packet_end_ts  : {packet_info['packet_end_ts']}\n"
+                    f"uart_ts       : {hex_dump_spaces(packet_info['cps_ts_bytes'])} "
+                    f"(le={int.from_bytes(packet_info['cps_ts_bytes'], 'little')}; "
+                    f"{format_timestamp_ms(int.from_bytes(packet_info['cps_ts_bytes'], 'little'))} ms)\n"
+                    f"packet_start_ts: {packet_info['packet_start_ts']} ticks "
+                    f"({format_timestamp_ms(packet_info['packet_start_ts'])} ms)\n"
+                    f"packet_end_ts  : {packet_info['packet_end_ts']} ticks "
+                    f"({format_timestamp_ms(packet_info['packet_end_ts'])} ms)\n"
+                    f"packet_delta   : {packet_info['packet_timestamp_delta']} ticks "
+                    f"({format_timestamp_ms(packet_info['packet_timestamp_delta'])} ms)\n"
                     f"packet_reserved: {hex_dump_spaces(packet_info['packet_reserved_bytes'])}\n"
                     f"rect_v        : {packet_info['rect_v']}\n"
                     f"rect_i        : {packet_info['rect_i']}\n"

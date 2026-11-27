@@ -23,7 +23,7 @@ from usb_client import (
     USB_HS_OUT_PAD_BYTES,
 )
 from logger import LOG_DIR, append_text
-from protocol import hex_dump_multiline, hex_dump_spaces
+from protocol import hex_dump_multiline, hex_dump_spaces, format_timestamp_ms
 from ui_plot import PlotPanel
 from udp_fsk import FSKReceiver
 from udp_fsk_r2 import FSKR2Receiver
@@ -101,6 +101,8 @@ _C_TEXT_DIM  = "#4A4A4A"   # dimmed text
 
 PORT_DEFAULT = 5002
 CPS_API_PORT_DEFAULT = PORT_DEFAULT
+MAX_UI_QUEUE_ITEMS_PER_TICK = 100
+MAX_PACKET_HISTORY = 500
 STM_FW_CTRL_TYPE_CONTROLLER = 0x01
 STM_FW_API_CONTROLLER_ENTER_ROM_DFU = 0x02
 _CPS_BOOT_HEX_DEFAULT = (
@@ -346,24 +348,6 @@ class App(tk.Tk):
         self._fw_log_lock = threading.Lock()
         self._fw_log_file: str | None = None
         self._runtime_api_block_owner: str | None = None
-
-        # ---- Logo images (keep references to prevent GC) ----
-        self._watermark_img = None  # faded centred watermark for TX/RX
-        try:
-            from PIL import Image, ImageTk, ImageEnhance
-            _raw = Image.open(resource_path("assets", "grl_logo.png")).convert("RGBA")
-
-            # Watermark: larger, faded (~12% opacity)
-            _wh = 200
-            _ww = int(_raw.width * _wh / _raw.height)
-            _wm = _raw.resize((_ww, _wh), Image.LANCZOS)
-            # Reduce alpha channel to ~12%
-            r, g, b, a = _wm.split()
-            a = a.point(lambda p: int(p * 0.12))
-            _wm = Image.merge("RGBA", (r, g, b, a))
-            self._watermark_img = ImageTk.PhotoImage(_wm)
-        except Exception:
-            pass
 
         # ---------------- Top bar (navy blue) ----------------
         top = ttk.Frame(self, style="TopBar.TFrame")
@@ -618,14 +602,6 @@ class App(tk.Tk):
         txrx_vsb.pack(side=tk.RIGHT, fill=tk.Y)
         self.txrx_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        # Centred watermark overlay on TX/RX monitor
-        if self._watermark_img is not None:
-            wm_lbl = tk.Label(self.txrx_text, image=self._watermark_img,
-                              bg=_C_WHITE, bd=0)
-            wm_lbl.place(relx=0.5, rely=0.5, anchor="center")
-            wm_lbl.bind("<Button-1>", lambda e: "break")  # pass clicks through
-            wm_lbl.lower()  # keep behind text cursor
-
         # ---------------- Plot tab (decoded packet list + plot) ----------------
         # Top control bar: Start / Pause / Stop
         plot_ctrl = ttk.Frame(self.tab_plot)
@@ -704,6 +680,7 @@ class App(tk.Tk):
         # map: tag -> timestamp(ms)
         self._pkt_tag_to_ts: dict[str, int] = {}
         self._pkt_tag_to_details: dict[str, str] = {}
+        self._pkt_history: list[tuple[str, str, str]] = []
         self._pkt_counter = 0
         self._pkt_autoscroll = True  # False when user has scrolled up
         self.plot_pkt_text.bind("<Button-1>", self.on_packet_text_click)
@@ -1200,7 +1177,7 @@ class App(tk.Tk):
         fsk_r2_lines: list[str] = []
         fsk_r2_packets = 0
         try:
-            while True:
+            for _ in range(MAX_UI_QUEUE_ITEMS_PER_TICK):
                 kind, payload = self.ui_q.get_nowait()
 
                 if kind == "status":
@@ -1283,9 +1260,15 @@ class App(tk.Tk):
             f"rect_i    : {rect_i}",
         ]
         if packet_ts_le is not None:
-            detail_lines.append(
-                f"packet_ts : {self._bytes_hex(cps_ts_bytes)} (le={packet_ts_le})"  # type: ignore
-            )
+            if info.get("streamer_format") == "new":
+                detail_lines.append(
+                    f"uart_ts   : {self._bytes_hex(cps_ts_bytes)} "
+                    f"(ticks={packet_ts_le}; {format_timestamp_ms(packet_ts_le)} ms)"
+                )
+            else:
+                detail_lines.append(
+                    f"packet_ts : {self._bytes_hex(cps_ts_bytes)} (le={packet_ts_le})"  # type: ignore
+                )
         else:
             detail_lines.append("packet_ts : n/a")
         packet_timestamp_bytes = info.get("packet_timestamp_bytes")
@@ -1295,14 +1278,21 @@ class App(tk.Tk):
             )
             detail_lines.append(
                 f"start_ts  : {self._bytes_hex(info['packet_start_ts_bytes'])} "
-                f"(le={info['packet_start_ts']})"
+                f"(ticks={info['packet_start_ts']}; "
+                f"{format_timestamp_ms(info['packet_start_ts'])} ms)"
             )
             detail_lines.append(
                 f"end_ts    : {self._bytes_hex(info['packet_end_ts_bytes'])} "
-                f"(le={info['packet_end_ts']})"
+                f"(ticks={info['packet_end_ts']}; "
+                f"{format_timestamp_ms(info['packet_end_ts'])} ms)"
             )
             detail_lines.append(
                 f"reserved  : {self._bytes_hex(info['packet_reserved_bytes'])}"
+            )
+            delta_ticks = info["packet_timestamp_delta"]
+            detail_lines.append(
+                f"delta     : {delta_ticks} ticks "
+                f"({format_timestamp_ms(delta_ticks)} ms)"
             )
         if info.get("_udp_addr"):
             detail_lines.append(f"source    : {info['_udp_addr']}")
@@ -1321,6 +1311,10 @@ class App(tk.Tk):
             return
 
         start = self.plot_pkt_text.index("end-1c")
+        start_mark = f"{tag}_start"
+        end_mark = f"{tag}_end"
+        self.plot_pkt_text.mark_set(start_mark, start)
+        self.plot_pkt_text.mark_gravity(start_mark, tk.LEFT)
         self.plot_pkt_text.insert("end", lines[0] + "\n")
         end = self.plot_pkt_text.index("end-1c")
 
@@ -1339,6 +1333,16 @@ class App(tk.Tk):
         for ln in lines[1:]:
             self.plot_pkt_text.insert("end", ln + "\n")
         self.plot_pkt_text.insert("end", "\n")
+        self.plot_pkt_text.mark_set(end_mark, "end-1c")
+        self.plot_pkt_text.mark_gravity(end_mark, tk.LEFT)
+        self._pkt_history.append((tag, start_mark, end_mark))
+        while len(self._pkt_history) > MAX_PACKET_HISTORY:
+            old_tag, old_start, old_end = self._pkt_history.pop(0)
+            self.plot_pkt_text.delete(old_start, old_end)
+            self.plot_pkt_text.mark_unset(old_start, old_end)
+            self.plot_pkt_text.tag_delete(old_tag)
+            self._pkt_tag_to_ts.pop(old_tag, None)
+            self._pkt_tag_to_details.pop(old_tag, None)
         if self._pkt_autoscroll:
             self.plot_pkt_text.see("end")
 
@@ -1456,6 +1460,9 @@ class App(tk.Tk):
     def clear_plot_all(self):
         self.plot_panel.clear()
         self.plot_pkt_text.delete("1.0", "end")
+        for _, start_mark, end_mark in self._pkt_history:
+            self.plot_pkt_text.mark_unset(start_mark, end_mark)
+        self._pkt_history.clear()
         self._pkt_tag_to_ts.clear()
         self._pkt_tag_to_details.clear()
         self._pkt_counter = 0
